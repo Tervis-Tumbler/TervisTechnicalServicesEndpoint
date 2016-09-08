@@ -1,6 +1,6 @@
 ﻿function Add-IPAddressToTrustedHosts {
     param (
-    [string]$IPAddress
+    [string][parameter(Mandatory, ValueFromPipeline)]$IPAddress
     )
 
     Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value $IPAddress -Force
