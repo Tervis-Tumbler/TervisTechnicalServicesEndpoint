@@ -33,3 +33,44 @@ function Copy-Windows10InstallFilesToUSBDrive {
     Copy-Item -Path "\\fs1\DisasterRecovery\Source Controlled Items\TervisWindows10\*" -Destination $USBDriveLetterWithColon -Force -Recurse
 
 }
+
+function New-TervisEndpoint {
+    [CmdletBinding()]
+    param (
+        $EndpointTypeName,
+        $MACAddressWithDashes
+    )
+
+    $EndpointType = Get-EndpointType -Name $EndpointTypeName
+
+    if ($EndpointType.Name -eq "ContactCenterAgent") {
+       
+        New-TervisEndpointContactCenterAgent -MACAddressWithDashes
+    }
+}
+
+function Get-TervisEndpointType {
+    param (
+        $Name
+    )
+
+    $EndpointTypes | where Name -eq $Name
+}
+
+$EndpointTypes = [PSCustomObject][Ordered] @{
+    Name = "ContactCenterAgent"
+
+},
+[PSCustomObject][Ordered] @{
+    Name = "BartenderPrintStationKiosk"
+    BaseName = "LabelPrint"
+}
+
+function New-TervisEndpointContactCenterAgent {
+    param (
+        $MACAddressWithDashes
+    )
+
+    Find-DHCPServerv4Lease -MACAddressWithDashes 
+
+}
