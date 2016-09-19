@@ -78,7 +78,7 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
     InstallScript = {
         
-        iwr https://chocolatey.org/install.ps1 | iex
+        iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
         
         refreshenv
         
