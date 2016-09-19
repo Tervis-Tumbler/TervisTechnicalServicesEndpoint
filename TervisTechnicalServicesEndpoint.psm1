@@ -82,6 +82,8 @@ function New-TervisEndpoint {
 
     $Credentials = Get-Credential
 
+    Install-TervisEndpointChocolatey -EndpointIPAddress $EndpointIPAddress -Credentials $Credentials -Verbose
+
     if ($EndpointType.Name -eq "ContactCenterAgent") {
 
         Write-Verbose "Starting Contact Center Agent install."
@@ -90,6 +92,33 @@ function New-TervisEndpoint {
 
     }
 }
+
+function Install-TervisEndpointChocolatey {
+    [CmdletBinding()]
+    param (
+        $EndpointIPAddress,
+        $Credentials    
+    )
+
+    Write-Verbose "Installing Chocolatey..."
+
+    Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock {
+        
+        Set-ExecutionPolicy Bypass
+
+        iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
+        
+        refreshenv
+        
+        choco feature enable -n allowEmptyChecksums
+
+        choco source add -n=Tervis -s"\\tervis.prv\applications\chocolatey\"
+
+        choco source list
+    }
+}
+
+
 
 function Get-TervisEndpointType {
     param (
@@ -102,16 +131,12 @@ function Get-TervisEndpointType {
 $EndpointTypes = [PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
     InstallScript = {
-        
-        iwr https://chocolatey.org/install.ps1 | iex
-        
-        refreshenv
-        
-        choco feature enable -n allowEmptyChecksums
 
-        Install-TervisChocolateyPackageInstall -PackageName CiscoJabber
+        
+        
+        #Install-TervisChocolateyPackageInstall -PackageName CiscoJabber
 
-        Install-TervisChocolateyPackageInstall -PackageName CiscoAgentDesktop
+        #Install-TervisChocolateyPackageInstall -PackageName CiscoAgentDesktop
 
         choco install googlechrome -y
 
