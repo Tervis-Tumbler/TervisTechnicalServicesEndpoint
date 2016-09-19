@@ -1,7 +1,7 @@
 ﻿function Add-IPAddressToWSManTrustedHosts {
     [CmdletBinding()]
     param (
-        [parameter(Mandatory, ValueFromPipeline)]$IPAddress
+        [parameter(Mandatory, ValueFromPipeline)][string]$IPAddress
     )
 
     Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value $IPAddress -Force
@@ -68,13 +68,23 @@ function New-TervisEndpoint {
 
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
 
-    $EndpointIPAddress = (Find-DHCPServerv4Lease -MACAddressWithDashes $MACAddressWithDashes).IPAddress
+    Write-Verbose "Getting IP address..."
+
+    $EndpointIPAddress = (Find-DHCPServerv4Lease -MACAddressWithDashes $MACAddressWithDashes).IPAddress.IPAddressToString
+
+    Write-Verbose "IP address found: $EndpointIPAddress"
+
+    Write-Verbose "Adding host to WSMan Trusted Hosts"
 
     Add-IPAddressToWSManTrustedHosts -IPAddress $EndpointIPAddress
+
+    Write-Verbose "Getting credentials..."
 
     $Credentials = Get-Credential
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {
+
+        Write-Verbose "Starting Contact Center Agent install."
        
         New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $Credentials -InstallScript $EndpointType.InstallScript
 
