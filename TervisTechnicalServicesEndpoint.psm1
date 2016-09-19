@@ -23,15 +23,40 @@ function Enter-PSSessionToNewEndpoint {
     Enter-PSSession -ComputerName $IPAddress -Credential $Credentials
 }
 
-function Copy-Windows10InstallFilesToUSBDrive {
-    [CmdletBinding()]
-    param (
-        [parameter(Mandatory)]$USBDriveLetterWithColon
-    )  
+function New-CustomerCareSignatures {
 
-    Copy-Item -Path "\\fs1\DisasterRecovery\Programs\Microsoft\Windows 10 Enterprise USB Install\*" -Destination $USBDriveLetterWithColon -Force -Recurse    
-    Copy-Item -Path "\\fs1\DisasterRecovery\Source Controlled Items\TervisWindows10\*" -Destination $USBDriveLetterWithColon -Force -Recurse
+param(            
+[parameter (Mandatory)][string]$UserName,
+[parameter (Mandatory)][string]$Computername,
+[parameter()][string]$SignatureTemplateLocation = "\\dfs-13\Departments - I Drive\Sales\DTC\Signatures"
+)  
 
+Copy-Item -Path $SignatureTemplateLocation -Destination C:\SigTemp\Signatures -Recurse
+
+#Placeholders
+$NameHolder = '\[Name\]'
+$PersonalEmailHolder = '\[PersonalEmail\]'
+$TitleHolder = '\[Title\]'
+
+#Get AD info of current user
+$ADUser = Get-ADUser -Identity $Username -Properties name,title,mail
+$ADDisplayName = $ADUser.Name
+$ADTitle = $ADUser.title
+$ADEmailAddress = $ADUser.mail
+
+$SignatureFiles = Get-ChildItem -Path C:\SigTemp\Signatures\*.*
+
+ForEach ($SignatureFile in $SignatureFiles) {
+    (Get-Content $SignatureFile) |
+    ForEach-Object {    
+       $_ -replace $NameHolder, $ADDisplayName `
+          -replace $TitleHolder, $ADTitle `
+          -replace $PersonalEmailHolder, $ADEmailAddress } |
+    Set-Content $SignatureFile
+    }
+
+Copy-Item "C:\SigTemp\Signatures" "\\$computername\c$\Users\$username\appdata\roaming\microsoft\" -Recurse -Force
+Remove-Item -Path "C:\SigTemp" -Recurse -Force
 }
 
 function New-TervisEndpoint {
