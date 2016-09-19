@@ -26,11 +26,12 @@ function Enter-PSSessionToNewEndpoint {
 function New-CustomerCareSignatures {
 
 param(            
-[string]$UserName,
-[string]$Computername          
+[parameter (Mandatory)][string]$UserName,
+[parameter (Mandatory)][string]$Computername,
+[parameter()][string]$SignatureTemplateLocation = "\\dfs-13\Departments - I Drive\Sales\DTC\Signatures"
 )  
 
-Copy-Item -Path "I:\Sales\DTC\Signatures" -Destination C:\SigTemp\Signatures -Recurse
+Copy-Item -Path $SignatureTemplateLocation -Destination C:\SigTemp\Signatures -Recurse
 
 #Placeholders
 $NameHolder = '\[Name\]'
