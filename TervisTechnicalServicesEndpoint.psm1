@@ -1,6 +1,6 @@
 ﻿function Add-IPAddressToWSManTrustedHosts {
     [CmdletBinding()]
-    param(
+    param (
         [parameter(Mandatory, ValueFromPipeline)]$IPAddress
     )
 
@@ -15,7 +15,7 @@ function Get-WSManTrustedHosts {
 
 function Enter-PSSessionToNewEndpoint {
     [CmdletBinding()]
-    param(
+    param (
         [parameter(Mandatory, ValueFromPipeline)]$IPAddress
     )    
     $Credentials = Get-Credential
@@ -25,7 +25,7 @@ function Enter-PSSessionToNewEndpoint {
 
 function Copy-Windows10InstallFilesToUSBDrive {
     [CmdletBinding()]
-    param(
+    param (
         [parameter(Mandatory)]$USBDriveLetterWithColon
     )  
 
@@ -41,11 +41,18 @@ function New-TervisEndpoint {
         $MACAddressWithDashes
     )
 
-    $EndpointType = Get-EndpointType -Name $EndpointTypeName
+    $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
+
+    $EndpointIPAddress = (Find-DHCPServerv4Lease -MACAddressWithDashes $MACAddressWithDashes).IPAddress
+
+    Add-IPAddressToWSManTrustedHosts -IPAddress $EndpointIPAddress
+
+    $Credentials = Get-Credential
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {
        
-        New-TervisEndpointContactCenterAgent -MACAddressWithDashes
+        New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $Credentials -InstallScript $EndpointType.InstallScript
+
     }
 }
 
@@ -59,18 +66,39 @@ function Get-TervisEndpointType {
 
 $EndpointTypes = [PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
+    InstallScript = {
+        
+        iwr https://chocolatey.org/install.ps1 | iex
+        
+        refreshenv
+        
+        choco feature enable -n allowEmptyChecksums
+
+        Install-TervisChocolateyPackageInstall -PackageName CiscoJabber
+
+        Install-TervisChocolateyPackageInstall -PackageName CiscoAgentDesktop
+
+        choco install googlechrome -y
+
+        choco install firefox -y
+
+        choco install autohotkey -y
+
+    }
 
 },
 [PSCustomObject][Ordered] @{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
+    
 }
 
 function New-TervisEndpointContactCenterAgent {
     param (
-        $MACAddressWithDashes
+        $EndpointIPAddress,
+        $Credentials,
+        $InstallScript
     )
 
-    Find-DHCPServerv4Lease -MACAddressWithDashes 
-
+        Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock $InstallScript
 }
