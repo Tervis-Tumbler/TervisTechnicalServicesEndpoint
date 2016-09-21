@@ -80,12 +80,16 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting credentials..."
 
+<<<<<<< HEAD
     # May need to change this to $LocalCredentials
     $Credentials = Get-Credential -Message "Enter local administrator credentials."
 
     # Insert function to add PC to domain here
 
     # Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $ADEndpoint -Credentials $DomainCredentials
+=======
+    $LocalAdministratorCredential = Get-Credential -Message "Intial local administrator credentials to computer"
+>>>>>>> refs/remotes/origin/master
 
     # May need to change $Credentials to $DomainCredentials
     Install-TervisEndpointChocolatey -EndpointIPAddress $EndpointIPAddress -Credentials $Credentials -Verbose
@@ -93,12 +97,17 @@ function New-TervisEndpoint {
     if ($EndpointType.Name -eq "ContactCenterAgent") {
 
         Write-Verbose "Starting Contact Center Agent install."
+<<<<<<< HEAD
        
         New-TervisEndpointContactCenterAgent `
             -EndpointIPAddress $EndpointIPAddress `
             -Credential $Credentials `
             -InstallScript $EndpointType.InstallScript
 
+=======
+        Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -Credential $Credential
+        New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
+>>>>>>> refs/remotes/origin/master
     }
 }
 
@@ -150,12 +159,15 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
         choco install autohotkey -y
 
     }
-
 },
 [PSCustomObject][Ordered] @{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
-    
+},
+[PSCustomObject][Ordered] @{
+    Name = "CafeKiosk"
+    BaseName = "Cafe"
+    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"    
 }
 
 function New-TervisEndpointContactCenterAgent {
@@ -168,6 +180,7 @@ function New-TervisEndpointContactCenterAgent {
         Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock $InstallScript
 }
 
+<<<<<<< HEAD
 function Set-PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
@@ -185,4 +198,31 @@ function Set-PrincipalsAllowedToDelegateToAccount {
     
     }
 
+=======
+function Set-TervisEndpointNameAndDomain {
+    param (
+        [Parameter(Mandatory)]$NewComputerName,
+        [Parameter(Mandatory)]$EndpointIPAddress,
+        [Parameter(Mandatory)]$OUPath,
+        $DomainName = 'tervis.prv'
+    )
+
+    Invoke-Command -ComputerName $EndpointIPAddress -Credential Administrator -ScriptBlock {
+        param($NewComputerName,$DomainName,$OUPath)
+        Add-Computer -NewName $NewComputerName -DomainName $DomainName -Force -Restart -OUPath $OUPath
+
+        } -ArgumentList $NewComputerName,$DomainName,$OUPath
+
+    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+}
+
+function Wait-ForEndpointRestart{
+    #Requires -Modules TervisTechnicalServicesLinux
+    Param(
+        [Parameter(Mandatory)]$IPAddress,
+        [Parameter(Mandatory)]$PortNumbertoMonitor
+    )
+    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
+    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
+>>>>>>> refs/remotes/origin/master
 }
