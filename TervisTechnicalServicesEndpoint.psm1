@@ -170,8 +170,7 @@ function Set-TervisEndpointNameAndDomain {
         [Parameter(Mandatory)]$NewComputerName,
         [Parameter(Mandatory)]$EndpointIPAddress,
         [Parameter(Mandatory)]$OUPath,
-        [String]$DomainName = $env:USERDNDOMAIN,
-        $Credential
+        $DomainName = 'tervis.prv'
     )
 
     Invoke-Command -ComputerName $EndpointIPAddress -Credential Administrator -ScriptBlock {
@@ -180,7 +179,7 @@ function Set-TervisEndpointNameAndDomain {
 
         } -ArgumentList $NewComputerName,$DomainName,$OUPath
 
-    Wait-ForPortAvailable -IPAddress $EndpointIPAddress -PortNumbertoMonitor 135
+    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
 }
 
 function Wait-ForEndpointRestart{
