@@ -80,16 +80,14 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting credentials..."
 
-<<<<<<< HEAD
     # May need to change this to $LocalCredentials
     $Credentials = Get-Credential -Message "Enter local administrator credentials."
 
     # Insert function to add PC to domain here
 
     # Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $ADEndpoint -Credentials $DomainCredentials
-=======
+
     $LocalAdministratorCredential = Get-Credential -Message "Intial local administrator credentials to computer"
->>>>>>> refs/remotes/origin/master
 
     # May need to change $Credentials to $DomainCredentials
     Install-TervisEndpointChocolatey -EndpointIPAddress $EndpointIPAddress -Credentials $Credentials -Verbose
@@ -97,17 +95,15 @@ function New-TervisEndpoint {
     if ($EndpointType.Name -eq "ContactCenterAgent") {
 
         Write-Verbose "Starting Contact Center Agent install."
-<<<<<<< HEAD
        
         New-TervisEndpointContactCenterAgent `
             -EndpointIPAddress $EndpointIPAddress `
             -Credential $Credentials `
             -InstallScript $EndpointType.InstallScript
 
-=======
         Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -Credential $Credential
         New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
->>>>>>> refs/remotes/origin/master
+    
     }
 }
 
@@ -180,7 +176,6 @@ function New-TervisEndpointContactCenterAgent {
         Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock $InstallScript
 }
 
-<<<<<<< HEAD
 function Set-PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
@@ -198,7 +193,6 @@ function Set-PrincipalsAllowedToDelegateToAccount {
     
     }
 
-=======
 function Set-TervisEndpointNameAndDomain {
     param (
         [Parameter(Mandatory)]$NewComputerName,
@@ -224,5 +218,5 @@ function Wait-ForEndpointRestart{
     )
     Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
     Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
->>>>>>> refs/remotes/origin/master
+
 }
