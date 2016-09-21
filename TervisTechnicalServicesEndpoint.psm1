@@ -74,35 +74,35 @@ function New-TervisEndpoint {
 
     Write-Verbose "IP address found: $EndpointIPAddress"
 
-    Write-Verbose "Adding host to WSMan Trusted Hosts"
+    Write-Verbose "Adding host to WSMan Trusted Hosts..."
 
     Add-IPAddressToWSManTrustedHosts -IPAddress $EndpointIPAddress
 
-    Write-Verbose "Getting credentials..."
+    Write-Verbose "Getting local admin credentials..."
 
-    # May need to change this to $LocalCredentials
-    $Credentials = Get-Credential -Message "Enter local administrator credentials."
+    $LocalAdministratorCredential = Get-Credential -Message "Enter local administrator credentials."
 
-    # Insert function to add PC to domain here
+    Write-Verbose "Getting domain admin credentials..."
 
-    # Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $ADEndpoint -Credentials $DomainCredentials
+    $DomainAdministratorCredential = Get-Credential -Message "Enter domain administrator credentials."
 
-    $LocalAdministratorCredential = Get-Credential -Message "Intial local administrator credentials to computer"
+    Write-Verbose "Adding endpoint to domain..."
+    
+    $TervisEndpointADComputerName = Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential
 
-    # May need to change $Credentials to $DomainCredentials
-    Install-TervisEndpointChocolatey -EndpointIPAddress $EndpointIPAddress -Credentials $Credentials -Verbose
+    Write-Verbose "Setting Resource-Based Kerberos Constrained Delegation..."
+
+    Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $TervisEndpointADComputerName -Credentials $DomainAdministratorCredential
+
+    Write-Verbose "Installing Chocolatey..."
+
+    Install-TervisEndpointChocolatey -EndpointName $TervisEndpointADComputerName -Credentials $DomainAdministratorCredential
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {
 
-        Write-Verbose "Starting Contact Center Agent install."
-       
-        New-TervisEndpointContactCenterAgent `
-            -EndpointIPAddress $EndpointIPAddress `
-            -Credential $Credentials `
-            -InstallScript $EndpointType.InstallScript
-
-        Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -Credential $Credential
-        New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
+        Write-Verbose "Starting Contact Center Agent install..."
+        
+        New-TervisEndpointContactCenterAgent -EndpointName $TervisEndpointADComputerName -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
     
     }
 }
@@ -110,13 +110,13 @@ function New-TervisEndpoint {
 function Install-TervisEndpointChocolatey {
     [CmdletBinding()]
     param (
-        $EndpointIPAddress,
+        $EndpointName,
         $Credentials    
     )
 
     Write-Verbose "Installing Chocolatey..."
 
-    Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock {
+    Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock {
         
         Set-ExecutionPolicy Bypass
 
@@ -155,10 +155,12 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
         choco install autohotkey -y
 
     }
+    DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
 },
 [PSCustomObject][Ordered] @{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
+    DefaultOU = "OU=BartenderPCs,OU=IndustryPCs,DC=tervis,DC=prv"
 },
 [PSCustomObject][Ordered] @{
     Name = "CafeKiosk"
@@ -168,12 +170,12 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 
 function New-TervisEndpointContactCenterAgent {
     param (
-        $EndpointIPAddress,
+        $EndpointName,
         $Credentials,
         $InstallScript
     )
 
-        Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock $InstallScript
+        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
 }
 
 function Set-PrincipalsAllowedToDelegateToAccount {
@@ -192,22 +194,27 @@ function Set-PrincipalsAllowedToDelegateToAccount {
         klist purge -li 0x3e7            
     
     }
+}
 
 function Set-TervisEndpointNameAndDomain {
     param (
         [Parameter(Mandatory)]$NewComputerName,
         [Parameter(Mandatory)]$EndpointIPAddress,
         [Parameter(Mandatory)]$OUPath,
+        [Parameter(Mandatory)]$LocalAdministratorCredential,
+        [Parameter(Mandatory)]$DomainAdministratorCredential,
         $DomainName = 'tervis.prv'
     )
 
-    Invoke-Command -ComputerName $EndpointIPAddress -Credential Administrator -ScriptBlock {
-        param($NewComputerName,$DomainName,$OUPath)
-        Add-Computer -NewName $NewComputerName -DomainName $DomainName -Force -Restart -OUPath $OUPath
+    Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
+        param($NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential)
+        Add-Computer -NewName $NewComputerName -DomainName $DomainName -Force -Restart -OUPath $OUPath -Credential $DomainAdministratorCredential
 
-        } -ArgumentList $NewComputerName,$DomainName,$OUPath
+        } -ArgumentList $NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential
 
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+
+    return $NewComputerName
 }
 
 function Wait-ForEndpointRestart{
