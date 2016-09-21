@@ -80,15 +80,34 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting credentials..."
 
-    $LocalAdministratorCredential = Get-Credential -Message "Intial local administrator credentials to computer"
+<<<<<<< HEAD
+    # May need to change this to $LocalCredentials
+    $Credentials = Get-Credential -Message "Enter local administrator credentials."
 
+    # Insert function to add PC to domain here
+
+    # Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $ADEndpoint -Credentials $DomainCredentials
+=======
+    $LocalAdministratorCredential = Get-Credential -Message "Intial local administrator credentials to computer"
+>>>>>>> refs/remotes/origin/master
+
+    # May need to change $Credentials to $DomainCredentials
     Install-TervisEndpointChocolatey -EndpointIPAddress $EndpointIPAddress -Credentials $Credentials -Verbose
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {
 
         Write-Verbose "Starting Contact Center Agent install."
+<<<<<<< HEAD
+       
+        New-TervisEndpointContactCenterAgent `
+            -EndpointIPAddress $EndpointIPAddress `
+            -Credential $Credentials `
+            -InstallScript $EndpointType.InstallScript
+
+=======
         Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -Credential $Credential
         New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
+>>>>>>> refs/remotes/origin/master
     }
 }
 
@@ -117,8 +136,6 @@ function Install-TervisEndpointChocolatey {
     }
 }
 
-
-
 function Get-TervisEndpointType {
     param (
         $Name
@@ -131,11 +148,9 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
     InstallScript = {
 
-        
-        
-        #Install-TervisChocolateyPackageInstall -PackageName CiscoJabber
+        choco install CiscoJabber -y
 
-        #Install-TervisChocolateyPackageInstall -PackageName CiscoAgentDesktop
+        choco install CiscoAgentDesktop -y
 
         choco install googlechrome -y
 
@@ -165,6 +180,25 @@ function New-TervisEndpointContactCenterAgent {
         Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock $InstallScript
 }
 
+<<<<<<< HEAD
+function Set-PrincipalsAllowedToDelegateToAccount {
+    [CmdletBinding()]
+    param (
+        $EndpointToAccessResource,
+        $Credentials = (Get-Credential)
+    )
+
+    $EndpointToAccessResourceObject = Get-ADComputer -Identity $EndpointToAccessResource
+
+    Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointToAccessResource
+
+    Invoke-Command -ComputerName $EndpointToAccessResource -Credential $Credentials -ScriptBlock {            
+        
+        klist purge -li 0x3e7            
+    
+    }
+
+=======
 function Set-TervisEndpointNameAndDomain {
     param (
         [Parameter(Mandatory)]$NewComputerName,
@@ -190,4 +224,5 @@ function Wait-ForEndpointRestart{
     )
     Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
     Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
+>>>>>>> refs/remotes/origin/master
 }
