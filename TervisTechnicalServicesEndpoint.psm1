@@ -80,16 +80,15 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting credentials..."
 
-    $Credentials = Get-Credential
+    $LocalAdministratorCredential = Get-Credential -Message "Intial local administrator credentials to computer"
 
     Install-TervisEndpointChocolatey -EndpointIPAddress $EndpointIPAddress -Credentials $Credentials -Verbose
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {
 
         Write-Verbose "Starting Contact Center Agent install."
-       
-        New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $Credentials -InstallScript $EndpointType.InstallScript
-
+        Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -Credential $Credential
+        New-TervisEndpointContactCenterAgent -EndpointIPAddress $EndpointIPAddress -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
     }
 }
 
@@ -145,12 +144,15 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
         choco install autohotkey -y
 
     }
-
 },
 [PSCustomObject][Ordered] @{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
-    
+},
+[PSCustomObject][Ordered] @{
+    Name = "CafeKiosk"
+    BaseName = "Cafe"
+    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"    
 }
 
 function New-TervisEndpointContactCenterAgent {
@@ -161,4 +163,31 @@ function New-TervisEndpointContactCenterAgent {
     )
 
         Invoke-Command -ComputerName $EndpointIPAddress -Credential $Credentials -ScriptBlock $InstallScript
+}
+
+function Set-TervisEndpointNameAndDomain {
+    param (
+        [Parameter(Mandatory)]$NewComputerName,
+        [Parameter(Mandatory)]$EndpointIPAddress,
+        [Parameter(Mandatory)]$OUPath,
+        $DomainName = 'tervis.prv'
+    )
+
+    Invoke-Command -ComputerName $EndpointIPAddress -Credential Administrator -ScriptBlock {
+        param($NewComputerName,$DomainName,$OUPath)
+        Add-Computer -NewName $NewComputerName -DomainName $DomainName -Force -Restart -OUPath $OUPath
+
+        } -ArgumentList $NewComputerName,$DomainName,$OUPath
+
+    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+}
+
+function Wait-ForEndpointRestart{
+    #Requires -Modules TervisTechnicalServicesLinux
+    Param(
+        [Parameter(Mandatory)]$IPAddress,
+        [Parameter(Mandatory)]$PortNumbertoMonitor
+    )
+    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
+    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
 }
