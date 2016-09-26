@@ -123,9 +123,7 @@ function Install-TervisEndpointChocolatey {
     Write-Verbose "Installing Chocolatey..."
 
     Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock {
-        
-        Set-ExecutionPolicy Bypass
-
+       
         iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
         
         refreshenv
