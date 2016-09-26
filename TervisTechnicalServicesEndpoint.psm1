@@ -91,16 +91,14 @@ function New-TervisEndpoint {
     
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential
 
-    Write-Verbose "Forcing a sync between domain controllers"
+    Write-Verbose "Forcing a sync between domain controllers..."
     $DC = Get-ADDomainController | Select -ExpandProperty HostName
     Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
-    Start-Sleep 180 
-
-    $EndpointObjectToAccessResource = Get-ADComputer -Identity $NewComputerName
+    Start-Sleep 30 
     
     Write-Verbose "Setting Resource-Based Kerberos Constrained Delegation..."
 
-    Set-PrincipalsAllowedToDelegateToAccount -EndpointObjectToAccessResource $EndpointObjectToAccessResource -Credentials $DomainAdministratorCredential
+    Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $NewComputerName -Credentials $DomainAdministratorCredential
 
     Write-Verbose "Installing Chocolatey..."
 
@@ -189,16 +187,16 @@ function New-TervisEndpointContactCenterAgent {
 function Set-PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
-        $EndpointObjectToAccessResource,
+        $EndpointToAccessResource,
         $Credentials = (Get-Credential),
         $ComputerName
     )
 
-    $EndpointToAccessResourceObject = Get-ADComputer -Identity $EndpointObjectToAccessResource
+    $EndpointObjectToAccessResource = Get-ADComputer -Identity $EndpointToAccessResource
 
     Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointObjectToAccessResource
 
-    Invoke-Command -ComputerName $ComputerName -Credential $Credentials -ScriptBlock {            
+    Invoke-Command -ComputerName $EndpointToAccessResource -Credential $Credentials -ScriptBlock {            
         
         klist purge -li 0x3e7            
     
