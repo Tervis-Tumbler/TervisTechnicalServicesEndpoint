@@ -91,21 +91,26 @@ function New-TervisEndpoint {
     
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential
 
-    $ComputerNameAFterDomainJoin = Get-ADComputer -Identity $NewComputerName | select -ExpandProperty name
+    Write-Verbose "Forcing a sync between domain controllers"
+    $DC = Get-ADDomainController | Select -ExpandProperty HostName
+    Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
+    Start-Sleep 180 
+
+    $EndpointObjectToAccessResource = Get-ADComputer -Identity $NewComputerName
     
     Write-Verbose "Setting Resource-Based Kerberos Constrained Delegation..."
 
-    Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $ComputerNameAFterDomainJoin -Credentials $DomainAdministratorCredential
+    Set-PrincipalsAllowedToDelegateToAccount -EndpointObjectToAccessResource $EndpointObjectToAccessResource -Credentials $DomainAdministratorCredential
 
     Write-Verbose "Installing Chocolatey..."
 
-    Install-TervisEndpointChocolatey -EndpointName $TervisEndpointADComputerName -Credentials $DomainAdministratorCredential
+    Install-TervisEndpointChocolatey -EndpointName $NewComputerName -Credentials $DomainAdministratorCredential
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {        
         
         Write-Verbose "Starting Contact Center Agent install..."
         
-        New-TervisEndpointContactCenterAgent -EndpointName $TervisEndpointADComputerName -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
+        New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
     
     }
 }
@@ -147,7 +152,7 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
     InstallScript = {
 
-        choco install CiscoJabber -y
+        #choco install CiscoJabber -y
 
         choco install CiscoAgentDesktop -y
 
@@ -184,15 +189,16 @@ function New-TervisEndpointContactCenterAgent {
 function Set-PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
-        $EndpointToAccessResource,
-        $Credentials = (Get-Credential)
+        $EndpointObjectToAccessResource,
+        $Credentials = (Get-Credential),
+        $ComputerName
     )
 
-    $EndpointToAccessResourceObject = Get-ADComputer -Identity $EndpointToAccessResource
+    $EndpointToAccessResourceObject = Get-ADComputer -Identity $EndpointObjectToAccessResource
 
-    Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointToAccessResource
+    Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointObjectToAccessResource
 
-    Invoke-Command -ComputerName $EndpointToAccessResource -Credential $Credentials -ScriptBlock {            
+    Invoke-Command -ComputerName $ComputerName -Credential $Credentials -ScriptBlock {            
         
         klist purge -li 0x3e7            
     
