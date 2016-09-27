@@ -63,7 +63,8 @@ function New-TervisEndpoint {
     [CmdletBinding()]
     param (
         $EndpointTypeName,
-        $MACAddressWithDashes
+        $MACAddressWithDashes,
+        $NewComputerName
     )
 
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
@@ -88,21 +89,26 @@ function New-TervisEndpoint {
 
     Write-Verbose "Adding endpoint to domain..."
     
-    $TervisEndpointADComputerName = Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential
+    Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential
 
+    Write-Verbose "Forcing a sync between domain controllers..."
+    $DC = Get-ADDomainController | Select -ExpandProperty HostName
+    Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
+    Start-Sleep 30 
+    
     Write-Verbose "Setting Resource-Based Kerberos Constrained Delegation..."
 
-    Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $TervisEndpointADComputerName -Credentials $DomainAdministratorCredential
+    Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $NewComputerName -Credentials $DomainAdministratorCredential
 
     Write-Verbose "Installing Chocolatey..."
 
-    Install-TervisEndpointChocolatey -EndpointName $TervisEndpointADComputerName -Credentials $DomainAdministratorCredential
+    Install-TervisEndpointChocolatey -EndpointName $NewComputerName -Credentials $DomainAdministratorCredential
 
-    if ($EndpointType.Name -eq "ContactCenterAgent") {
-
+    if ($EndpointType.Name -eq "ContactCenterAgent") {        
+        
         Write-Verbose "Starting Contact Center Agent install..."
         
-        New-TervisEndpointContactCenterAgent -EndpointName $TervisEndpointADComputerName -Credential $LocalAdministratorCredential -InstallScript $EndpointType.InstallScript        
+        New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
     
     }
 }
@@ -117,9 +123,7 @@ function Install-TervisEndpointChocolatey {
     Write-Verbose "Installing Chocolatey..."
 
     Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock {
-        
-        Set-ExecutionPolicy Bypass
-
+       
         iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
         
         refreshenv
@@ -144,7 +148,7 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
     InstallScript = {
 
-        choco install CiscoJabber -y
+        #choco install CiscoJabber -y
 
         choco install CiscoAgentDesktop -y
 
@@ -182,12 +186,13 @@ function Set-PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
         $EndpointToAccessResource,
-        $Credentials = (Get-Credential)
+        $Credentials = (Get-Credential),
+        $ComputerName
     )
 
-    $EndpointToAccessResourceObject = Get-ADComputer -Identity $EndpointToAccessResource
+    $EndpointObjectToAccessResource = Get-ADComputer -Identity $EndpointToAccessResource
 
-    Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointToAccessResource
+    Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointObjectToAccessResource
 
     Invoke-Command -ComputerName $EndpointToAccessResource -Credential $Credentials -ScriptBlock {            
         
@@ -203,7 +208,8 @@ function Set-TervisEndpointNameAndDomain {
         [Parameter(Mandatory)]$OUPath,
         [Parameter(Mandatory)]$LocalAdministratorCredential,
         [Parameter(Mandatory)]$DomainAdministratorCredential,
-        $DomainName = 'tervis.prv'
+        $DomainName = 'tervis.prv',
+        $TimeToWaitForGroupPolicy = '180'
     )
 
     Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
@@ -213,8 +219,11 @@ function Set-TervisEndpointNameAndDomain {
         } -ArgumentList $NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential
 
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+    
+    Write-Verbose 'Waiting for Group Policy to complete.'
 
-    return $NewComputerName
+    Start-Sleep -Seconds $TimeToWaitForGroupPolicy
+
 }
 
 function Wait-ForEndpointRestart{
@@ -223,7 +232,14 @@ function Wait-ForEndpointRestart{
         [Parameter(Mandatory)]$IPAddress,
         [Parameter(Mandatory)]$PortNumbertoMonitor
     )
-    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
-    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor
+    Write-Verbose "Waiting for endpoint to reboot..."
+
+    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction Ignore
+    
+    Write-Verbose "Waiting for endpoint to startup..."
+    
+    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction Ignore
+
+    Write-Verbose "Endpoint is up and running..."
 
 }
