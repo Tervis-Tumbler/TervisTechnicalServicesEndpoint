@@ -169,7 +169,14 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 [PSCustomObject][Ordered] @{
     Name = "CafeKiosk"
     BaseName = "Cafe"
-    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"    
+    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
+    InstallScript = {
+   
+    choco install adobereader -y
+
+    choco install office365-2016-deployment-tool -version 16.0.7213.5776 -y
+
+    }    
 }
 
 function New-TervisEndpointContactCenterAgent {
@@ -242,4 +249,33 @@ function Wait-ForEndpointRestart{
 
     Write-Verbose "Endpoint is up and running..."
 
+}
+
+function New-TervisLocalAdminAccount {
+    #Requires -version 5.0
+
+    Param(
+        [Parameter(Mandatory)]$ComputerName
+    )
+
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+
+        New-LocalUser -Name "TumblerAdministrator" -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
+        
+        }
+}
+
+function Get-TervisLocalAdminAccount {
+    #Requires -version 5.0
+
+    Param(
+        [Parameter(Mandatory)]$ComputerName,
+        $LocalUserName = '*'
+    )
+
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+        param($LocaUserName)
+        Get-LocalUser -Name $LocaUserName
+
+    } -ArgumentList $LocalUserName
 }
