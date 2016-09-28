@@ -100,6 +100,18 @@ function New-TervisEndpoint {
 
     Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $NewComputerName -Credentials $DomainAdministratorCredential
 
+    Write-Verbose "Creating TumblerAdministrator local account..."
+
+    New-TervisLocalAdminAccount -ComputerName $NewComputerName
+        
+    Write-Verbose "Resetting password of built-in Administrator account..."
+
+    Set-TervisBuiltInAdminAccountPassword -ComputerName $NewComputerName
+
+    Write-Verbose "Disabling built-in Administrator account..."
+        
+    Disable-TervisBuiltInAdminAccount -ComputerName $NewComputerName
+
     Write-Verbose "Installing Chocolatey..."
 
     Install-TervisEndpointChocolatey -EndpointName $NewComputerName -Credentials $DomainAdministratorCredential
@@ -109,7 +121,7 @@ function New-TervisEndpoint {
         Write-Verbose "Starting Contact Center Agent install..."
         
         New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
-    
+
     }
 }
 
@@ -257,12 +269,14 @@ function New-TervisLocalAdminAccount {
     Param(
         [Parameter(Mandatory)]$ComputerName
     )
+    $NewPassword = Read-Host -Prompt "Please enter the TumblerAdministrator password" -AsSecureString
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-
-        New-LocalUser -Name "TumblerAdministrator" -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
+        param($NewPassword)
         
-        }
+        New-LocalUser -Name "TumblerAdministrator" -Password $NewPassword -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
+        
+        } -ArgumentList $NewPassword
 }
 
 function Get-TervisLocalAdminAccount {
@@ -275,7 +289,38 @@ function Get-TervisLocalAdminAccount {
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         param($LocaUserName)
+        
         Get-LocalUser -Name $LocaUserName
 
     } -ArgumentList $LocalUserName
+}
+
+function Set-TervisBuiltInAdminAccountPassword {
+    #Requires -version 5.0
+
+    Param(
+        [Parameter(Mandatory)]$ComputerName
+    )
+    $NewPassword = Read-Host -Prompt "Please enter a new password for the built-in Administrator" -AsSecureString
+    
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+        param($NewPassword)
+        
+        Set-LocalUser -Name Administrator -Password $NewPassword
+
+    } -ArgumentList $NewPassword
+}
+
+function Disable-TervisBuiltInAdminAccount {
+    #Requires -version 5.0
+
+    Param(
+        [Parameter(Mandatory)]$ComputerName
+    )
+
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+        
+        Disable-LocalUser -Name Administrator
+
+    }
 }
