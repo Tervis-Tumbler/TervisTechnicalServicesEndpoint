@@ -89,7 +89,7 @@ function New-TervisEndpoint {
 
     $DomainAdministratorCredential = Get-Credential -Message "Enter domain administrator credentials."
     
-    Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential
+    Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential -ErrorAction Stop
 
     Write-Verbose "Forcing a sync between domain controllers..."
     $DC = Get-ADDomainController | Select -ExpandProperty HostName
@@ -221,6 +221,7 @@ function Set-PrincipalsAllowedToDelegateToAccount {
 }
 
 function Set-TervisEndpointNameAndDomain {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory)]$NewComputerName,
         [Parameter(Mandatory)]$EndpointIPAddress,
@@ -261,6 +262,7 @@ function Set-TervisEndpointNameAndDomain {
 
 function Wait-ForEndpointRestart{
     #Requires -Modules TervisTechnicalServicesLinux
+    
     Param(
         [Parameter(Mandatory)]$IPAddress,
         [Parameter(Mandatory)]$PortNumbertoMonitor
