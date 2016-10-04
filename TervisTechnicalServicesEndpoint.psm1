@@ -81,9 +81,10 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting local admin credentials..."
 
-    $InitialAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\EndpointInitialAdminAccount.apikey"
-    $LocalAdministratorPassword = ConvertTo-SecureString $InitialAdminPasswordStateEntry.Password -AsPlainText -Force
-    $LocalAdministratorCredential = New-Object System.Management.Automation.PSCredential ($InitialAdminPasswordStateEntry.UserName, $LocalAdministratorPassword)
+    $LocalAdministratorCredential = Get-Credential -Message "Enter local administrator credentials." # Old method 
+    #$InitialAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\EndpointInitialAdminAccount.apikey"
+    #$LocalAdministratorPassword = ConvertTo-SecureString $InitialAdminPasswordStateEntry.Password -AsPlainText -Force
+    #$LocalAdministratorCredential = New-Object System.Management.Automation.PSCredential ($InitialAdminPasswordStateEntry.UserName, $LocalAdministratorPassword)
 
     Write-Verbose "Getting domain admin credentials..."
 
@@ -286,8 +287,9 @@ function New-TervisLocalAdminAccount {
     Param(
         [Parameter(Mandatory)]$ComputerName
     )
-    $TumblerAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\TumblerAdmin.apikey"
-    $TumblerAdminPassword = ConvertTo-SecureString $TumblerAdminPasswordStateEntry.password -AsPlainText -Force
+    $TumblerAdminPassword = Read-Host -Prompt "Please enter the TumblerAdministrator password" -AsSecureString # Old method
+    #$TumblerAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\TumblerAdmin.apikey"
+    #$TumblerAdminPassword = ConvertTo-SecureString $TumblerAdminPasswordStateEntry.password -AsPlainText -Force
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         param($TumblerAdminPassword)
@@ -321,8 +323,9 @@ function Set-TervisBuiltInAdminAccountPassword {
     Param(
         [Parameter(Mandatory)]$ComputerName
     )
-    $BuiltinAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\EndpointBuiltinAdmin.apikey"
-    $BuiltinAdminPassword = ConvertTo-SecureString $BuiltinAdminPasswordStateEntry.password -AsPlainText -Force
+    $BuiltinAdminPassword = Read-Host -Prompt "Please enter a new password for the built-in Administrator" -AsSecureString # Old method
+    #$BuiltinAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\EndpointBuiltinAdmin.apikey"
+    #$BuiltinAdminPassword = ConvertTo-SecureString $BuiltinAdminPasswordStateEntry.password -AsPlainText -Force
     
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         param($BuiltinAdminPassword)
