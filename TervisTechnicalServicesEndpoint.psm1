@@ -60,11 +60,22 @@ Remove-Item -Path "C:\SigTemp" -Recurse -Force
 }
 
 function New-TervisEndpoint {
+    #Requires -version 5.0
+    #Requires -modules PasswordstatePowershell
+    
     [CmdletBinding()]
     param (
-        $EndpointTypeName,
-        $MACAddressWithDashes,
-        $NewComputerName
+        [Parameter(Mandatory)]
+        [String]$EndpointTypeName,
+        
+        [Parameter(Mandatory)]
+        [String]$MACAddressWithDashes,
+        
+        [Parameter(Mandatory)]
+        [String]$NewComputerName,
+        
+        [Parameter(Mandatory)]
+        [String]$PasswordstateListAPIKey
     )
 
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
@@ -81,15 +92,12 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting local admin credentials..."
 
-    $LocalAdministratorCredential = Get-Credential -Message "Enter local administrator credentials." # Old method 
-    #$InitialAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\EndpointInitialAdminAccount.apikey"
-    #$LocalAdministratorPassword = ConvertTo-SecureString $InitialAdminPasswordStateEntry.Password -AsPlainText -Force
-    #$LocalAdministratorCredential = New-Object System.Management.Automation.PSCredential ($InitialAdminPasswordStateEntry.UserName, $LocalAdministratorPassword)
+    $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 3954
 
     Write-Verbose "Getting domain admin credentials..."
 
     $DomainAdministratorCredential = Get-Credential -Message "Enter domain administrator credentials."
-    
+
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential -ErrorAction Stop
 
     Write-Verbose "Forcing a sync between domain controllers..."
@@ -103,11 +111,11 @@ function New-TervisEndpoint {
 
     Write-Verbose "Creating TumblerAdministrator local account..."
 
-    New-TervisLocalAdminAccount -ComputerName $NewComputerName
+    New-TervisLocalAdminAccount -ComputerName $NewComputerName -PasswordstateListAPIKey $PasswordstateListAPIKey
         
     Write-Verbose "Resetting password of built-in Administrator account..."
 
-    Set-TervisBuiltInAdminAccountPassword -ComputerName $NewComputerName
+    Set-TervisBuiltInAdminAccountPassword -ComputerName $NewComputerName -PasswordstateListAPIKey $PasswordstateListAPIKey
 
     Write-Verbose "Disabling built-in Administrator account..."
         
@@ -240,7 +248,7 @@ function Set-TervisEndpointNameAndDomain {
         
         Rename-Computer -NewName $NewComputerName -LocalCredential $LocalAdministratorCredential -Force -Restart
 
-        } -ArgumentList $NewComputerName,$LocalAdministratorCredential
+        } -ArgumentList $NewComputerName,$LocalAdministratorCredential -ErrorAction Stop
 
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
 
@@ -270,11 +278,11 @@ function Wait-ForEndpointRestart{
     )
     Write-Verbose "Waiting for endpoint to reboot..."
 
-    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction Ignore
+    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
     
     Write-Verbose "Waiting for endpoint to startup..."
     
-    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction Ignore
+    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
 
     Write-Verbose "Endpoint is up and running..."
 
@@ -285,11 +293,13 @@ function New-TervisLocalAdminAccount {
     #Requires -modules PasswordstatePowershell
 
     Param(
-        [Parameter(Mandatory)]$ComputerName
+        [Parameter(Mandatory)]$ComputerName,
+        [Parameter(Mandatory)]$PasswordstateListAPIKey
     )
-    $TumblerAdminPassword = Read-Host -Prompt "Please enter the TumblerAdministrator password" -AsSecureString # Old method
-    #$TumblerAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\TumblerAdmin.apikey"
-    #$TumblerAdminPassword = ConvertTo-SecureString $TumblerAdminPasswordStateEntry.password -AsPlainText -Force
+    
+    $TumblerAdminCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 14
+    
+    $TumblerAdminPassword = $TumblerAdminCredential.Password
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         param($TumblerAdminPassword)
@@ -321,12 +331,14 @@ function Set-TervisBuiltInAdminAccountPassword {
     #Requires -modules PasswordstatePowershell
 
     Param(
-        [Parameter(Mandatory)]$ComputerName
+        [Parameter(Mandatory)]$ComputerName,
+        [Parameter(Mandatory)]$PasswordstateListAPIKey
     )
-    $BuiltinAdminPassword = Read-Host -Prompt "Please enter a new password for the built-in Administrator" -AsSecureString # Old method
-    #$BuiltinAdminPasswordStateEntry = Get-PasswordStateCredentialFromFile -SecuredAPIkeyFilePath "\\fs1\DisasterRecovery\Source Controlled Items\SecuredCredential API Keys\EndpointBuiltinAdmin.apikey"
-    #$BuiltinAdminPassword = ConvertTo-SecureString $BuiltinAdminPasswordStateEntry.password -AsPlainText -Force
     
+    $BuiltinAdminCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 3972
+    
+    $BuiltinAdminPassword = $BuiltinAdminCredential.Password
+
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         param($BuiltinAdminPassword)
         
