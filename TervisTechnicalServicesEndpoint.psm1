@@ -132,6 +132,14 @@ function New-TervisEndpoint {
         New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
 
     }
+    elseif ($EndpointType.Name -eq "CafeKiosk") {
+        
+        Write-Verbose "Starting Cafe Kiosk install..."
+        
+        New-TervisEndpointCafeKiosk -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript -EndpointIPAddress $EndpointIPAddress     
+
+
+    }
 }
 
 function Install-TervisEndpointChocolatey {
@@ -192,10 +200,10 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     BaseName = "Cafe"
     DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
-   
-    choco install adobereader -y
+    
+    #choco install adobereader -y
 
-    choco install office365-2016-deployment-tool -version 16.0.7213.5776 -y
+    #choco install office365-2016-deployment-tool -version 16.0.7213.5776 -y
 
     }    
 }
@@ -207,6 +215,29 @@ function New-TervisEndpointContactCenterAgent {
         $InstallScript
     )
 
+        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
+}
+
+function New-TervisEndpointCafeKiosk {
+    param (
+        $EndpointName,
+        $EndpointIPAddress,
+        $Credentials,
+        $InstallScript
+    )
+
+        Write-Verbose "Updating Group Policy on endpoint..."
+
+        Invoke-GPUpdate -Computer $EndpointName -RandomDelayInMinutes 0 -Force | Out-Null
+
+        Write-Verbose "Restarting endpoint..."
+
+        Restart-Computer -ComputerName $EndpointName -Force
+
+        Write-Verbose "Waiting for endpoint to reboot..."
+
+        Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+        
         Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
 }
 
