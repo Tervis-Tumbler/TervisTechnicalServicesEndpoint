@@ -1,4 +1,7 @@
-﻿function Add-IPAddressToWSManTrustedHosts {
+﻿#Requires -version 5.0
+#Requires -modules PasswordstatePowershell, TervisTechnicalServicesLinux
+
+function Add-IPAddressToWSManTrustedHosts {
     [CmdletBinding()]
     param (
         [parameter(Mandatory, ValueFromPipeline)][string]$IPAddress
@@ -59,10 +62,7 @@ Copy-Item "C:\SigTemp\Signatures" "\\$computername\c$\Users\$username\appdata\ro
 Remove-Item -Path "C:\SigTemp" -Recurse -Force
 }
 
-function New-TervisEndpoint {
-    #Requires -version 5.0
-    #Requires -modules PasswordstatePowershell
-    
+function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -269,9 +269,7 @@ function Set-TervisEndpointNameAndDomain {
 
 }
 
-function Wait-ForEndpointRestart{
-    #Requires -Modules TervisTechnicalServicesLinux
-    
+function Wait-ForEndpointRestart{    
     Param(
         [Parameter(Mandatory)]$IPAddress,
         [Parameter(Mandatory)]$PortNumbertoMonitor
@@ -289,9 +287,6 @@ function Wait-ForEndpointRestart{
 }
 
 function New-TervisLocalAdminAccount {
-    #Requires -version 5.0
-    #Requires -modules PasswordstatePowershell
-
     Param(
         [Parameter(Mandatory)]$ComputerName,
         [Parameter(Mandatory)]$PasswordstateListAPIKey
@@ -311,8 +306,6 @@ function New-TervisLocalAdminAccount {
 }
 
 function Get-TervisLocalAdminAccount {
-    #Requires -version 5.0
-
     Param(
         [Parameter(Mandatory)]$ComputerName,
         $LocalUserName = '*'
@@ -327,9 +320,6 @@ function Get-TervisLocalAdminAccount {
 }
 
 function Set-TervisBuiltInAdminAccountPassword {
-    #Requires -version 5.0
-    #Requires -modules PasswordstatePowershell
-
     Param(
         [Parameter(Mandatory)]$ComputerName,
         [Parameter(Mandatory)]$PasswordstateListAPIKey
@@ -348,8 +338,6 @@ function Set-TervisBuiltInAdminAccountPassword {
 }
 
 function Disable-TervisBuiltInAdminAccount {
-    #Requires -version 5.0
-
     Param(
         [Parameter(Mandatory)]$ComputerName
     )
