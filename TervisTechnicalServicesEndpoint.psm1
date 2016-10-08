@@ -302,7 +302,7 @@ function New-TervisLocalAdminAccount {
         New-LocalUser -Name "TumblerAdministrator" -Password $TumblerAdminPassword -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
         Add-LocalGroupMember -Name "Administrators" -Member "TumblerAdministrator"
 
-        } -ArgumentList $TumblerAdminPassword
+    } -ArgumentList $TumblerAdminPassword
 }
 
 function Get-TervisLocalAdminAccount {
