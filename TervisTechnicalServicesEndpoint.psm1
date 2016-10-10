@@ -179,6 +179,17 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 
         choco install autohotkey -y
 
+        choco install javaruntime -version 7.0.60 -y
+
+        #Copy-Item -Path \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\DeploymentRuleSet.Jar -Destination (New-Item -Type Directory -Path "C:\Windows\Sun\Java\Deployment\") -Force
+        
+        #Import-Certificate -FilePath \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\TervisTumbler.cer -CertStoreLocation 'Cert:\LocalMachine\Root'
+
+        choco install LivePerson -y
+
+        choco install greenshot -y
+
+
     }
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
 },
