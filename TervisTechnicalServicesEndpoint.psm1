@@ -198,7 +198,7 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 [PSCustomObject][Ordered] @{
     Name = "CafeKiosk"
     BaseName = "Cafe"
-    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
+    DefaultOU="OU=CafeKiosks,OU=Endpoints,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
     
     #choco install adobereader -y
