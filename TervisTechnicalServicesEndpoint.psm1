@@ -131,6 +131,14 @@ function New-TervisEndpoint {
         
         New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
 
+    } 
+    
+    if ($EndpointType.Name -eq "Expeditor") {
+        
+        Write-Verbose "Starting Expeditor install..."
+
+        New-TervisEndpointExpeditor -EndpointName $NewComputerName -Credentials $DomainAdministratorCredential -InstallScript $EndpointTypeName.InstallScript
+
     }
 }
 
@@ -179,28 +187,76 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 
         choco install autohotkey -y
 
+        choco install javaruntime -version 7.0.60 -y
+
+        #Copy-Item -Path \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\DeploymentRuleSet.Jar -Destination (New-Item -Type Directory -Path "C:\Windows\Sun\Java\Deployment\") -Force
+        
+        #Import-Certificate -FilePath \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\TervisTumbler.cer -CertStoreLocation 'Cert:\LocalMachine\Root'
+
+        choco install LivePerson -y
+
+        choco install greenshot -y
+
     }
+
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
 },
+
 [PSCustomObject][Ordered] @{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
     DefaultOU = "OU=BartenderPCs,OU=IndustryPCs,DC=tervis,DC=prv"
 },
+
 [PSCustomObject][Ordered] @{
     Name = "CafeKiosk"
     BaseName = "Cafe"
-    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
+    DefaultOU = "OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
    
     choco install adobereader -y
 
     choco install office365-2016-deployment-tool -version 16.0.7213.5776 -y
 
-    }    
+    }
+},
+
+[PSCustomObject][Ordered] @{
+    Name = "Expeditor"
+    BaseName = "Expeditor"
+    DefaultOU = "OU=Expeditors,OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
+    InstallScript = {
+   
+    choco install adobereader -y
+
+    choco install office365-2016-deployment-tool  -y
+
+    choco install googlechrome -y
+
+    choco install firefox -y
+
+    choco install CiscoJabber -y
+
+    choco install autohotkey -y
+
+    choco install javaruntime -version 7.0.60 -y
+
+    choco install greenshot -y
+
+    }         
 }
 
 function New-TervisEndpointContactCenterAgent {
+    param (
+        $EndpointName,
+        $Credentials,
+        $InstallScript
+    )
+
+        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
+}
+
+function New-TervisEndpointExpeditor {
     param (
         $EndpointName,
         $Credentials,
