@@ -133,7 +133,9 @@ function New-TervisEndpoint {
 
     } 
     
-    if ($EndpointType.Name -eq "Expeditor") {
+
+
+    elseif ($EndpointType.Name -eq "Expeditor") {
         
         Write-Verbose "Starting Expeditor install..."
 
@@ -173,7 +175,9 @@ function Get-TervisEndpointType {
     $EndpointTypes | where Name -eq $Name
 }
 
-$EndpointTypes = [PSCustomObject][Ordered] @{
+$EndpointTypes = 
+
+[PSCustomObject][Ordered] @{
     Name = "ContactCenterAgent"
     InstallScript = {
 
@@ -227,21 +231,21 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     DefaultOU = "OU=Expeditors,OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
    
-    choco install adobereader -y
+        choco install adobereader -y
 
-    choco install office365-2016-deployment-tool  -y
+        choco install office365-2016-deployment-tool  -y
 
-    choco install googlechrome -y
+        choco install googlechrome -y
 
-    choco install firefox -y
+        choco install firefox -y
 
-    choco install CiscoJabber -y
+        choco install CiscoJabber -y
 
-    choco install autohotkey -y
+        choco install autohotkey -y
 
-    choco install javaruntime -version 7.0.60 -y
+        choco install javaruntime -version 7.0.60 -y
 
-    choco install greenshot -y
+        choco install greenshot -y
 
     }         
 }
@@ -262,8 +266,11 @@ function New-TervisEndpointExpeditor {
         $Credentials,
         $InstallScript
     )
+        
+        [string]$Name = $EndpointName
+        [scriptblock]$Script = $InstallScript
 
-        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
+        Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
 }
 
 function Set-PrincipalsAllowedToDelegateToAccount {
