@@ -197,7 +197,7 @@ $EndpointTypes =
         
         #Import-Certificate -FilePath \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\TervisTumbler.cer -CertStoreLocation 'Cert:\LocalMachine\Root'
 
-        choco install LivePerson -y
+        #choco install LivePerson -y
 
         choco install greenshot -y
 
