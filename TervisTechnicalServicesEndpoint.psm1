@@ -139,7 +139,10 @@ function New-TervisEndpoint {
         
         Write-Verbose "Starting Expeditor install..."
 
-        New-TervisEndpointExpeditor -EndpointName $NewComputerName -Credentials $DomainAdministratorCredential -InstallScript $EndpointTypeName.InstallScript
+        [scriptblock]$Script = $EndpointType.InstallScript
+        [string]$Name = $NewComputerName
+
+        New-TervisEndpointExpeditor -EndpointName $Name -Credentials $DomainAdministratorCredential -InstallScript $Script
 
     }
 }
