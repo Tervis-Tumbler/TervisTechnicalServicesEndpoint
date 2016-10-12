@@ -204,6 +204,8 @@ $EndpointTypes =
 
         choco install greenshot -y
 
+        choco install office365-2016-deployment-tool -y
+
     }
 
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
