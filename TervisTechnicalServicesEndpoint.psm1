@@ -146,6 +146,14 @@ function New-TervisEndpoint {
         New-TervisEndpointExpeditor -EndpointName $Name -Credentials $DomainAdministratorCredential -InstallScript $Script
 
     }
+    elseif ($EndpointType.Name -eq "CafeKiosk") {
+        
+        Write-Verbose "Starting Cafe Kiosk install..."
+        
+        New-TervisEndpointCafeKiosk -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript -EndpointIPAddress $EndpointIPAddress     
+
+
+    }
 }
 
 function Install-TervisEndpointChocolatey {
@@ -201,11 +209,18 @@ $EndpointTypes =
         
         #Import-Certificate -FilePath \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\TervisTumbler.cer -CertStoreLocation 'Cert:\LocalMachine\Root'
 
+<<<<<<< HEAD
         #choco install LivePerson -y
 
         choco install greenshot -y
 
         choco install office365-2016-deployment-tool -y
+=======
+        choco install LivePerson -y
+
+        choco install greenshot -y
+
+>>>>>>> refs/remotes/origin/master
 
     }
 
@@ -223,10 +238,6 @@ $EndpointTypes =
     BaseName = "Cafe"
     DefaultOU = "OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
-   
-    choco install adobereader -y
-
-    choco install office365-2016-deployment-tool -version 16.0.7213.5776 -y
 
     }
 },
@@ -266,6 +277,7 @@ function New-TervisEndpointContactCenterAgent {
         Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
 }
 
+<<<<<<< HEAD
 function New-TervisEndpointExpeditor {
     param (
         $EndpointName,
@@ -277,6 +289,39 @@ function New-TervisEndpointExpeditor {
         [scriptblock]$Script = $InstallScript
 
         Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
+=======
+function New-TervisEndpointCafeKiosk {
+    param (
+        $EndpointName,
+        $EndpointIPAddress,
+        $Credentials,
+        $InstallScript
+    )
+
+        $EndpointADObject = Get-ADComputer -Identity $EndpointName
+        
+        Write-Verbose "Adding computer object to Resource_CafeKiosks group..."
+
+        Add-ADGroupMember -Identity Resource_CafeKiosks -Members $EndpointADObject
+        
+        Write-Verbose "Updating Group Policy on endpoint..."
+
+        Invoke-GPUpdate -Computer $EndpointName -RandomDelayInMinutes 0 -Force | Out-Null
+
+        Write-Verbose "Restarting endpoint..."
+
+        Restart-Computer -ComputerName $EndpointName -Force
+
+        Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+
+        Write-Verbose "Restarting endpoint again..."
+
+        Restart-Computer -ComputerName $EndpointName -Force
+
+        Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+        
+        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
+>>>>>>> refs/remotes/origin/master
 }
 
 function Set-PrincipalsAllowedToDelegateToAccount {
