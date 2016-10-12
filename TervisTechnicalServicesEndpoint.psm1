@@ -277,6 +277,8 @@ function New-TervisEndpointExpeditor {
 
         Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
 
+}
+
 function New-TervisEndpointCafeKiosk {
     param (
         $EndpointName,
