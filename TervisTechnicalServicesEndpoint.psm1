@@ -205,22 +205,9 @@ $EndpointTypes =
 
         choco install javaruntime -version 7.0.60 -y
 
-        #Copy-Item -Path \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\DeploymentRuleSet.Jar -Destination (New-Item -Type Directory -Path "C:\Windows\Sun\Java\Deployment\") -Force
-        
-        #Import-Certificate -FilePath \\$env:USERDNSDOMAIN\applications\Chocolatey\JavaCerts\TervisTumbler.cer -CertStoreLocation 'Cert:\LocalMachine\Root'
-
-<<<<<<< HEAD
-        #choco install LivePerson -y
-
         choco install greenshot -y
 
         choco install office365-2016-deployment-tool -y
-=======
-        choco install LivePerson -y
-
-        choco install greenshot -y
-
->>>>>>> refs/remotes/origin/master
 
     }
 
@@ -277,7 +264,7 @@ function New-TervisEndpointContactCenterAgent {
         Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
 }
 
-<<<<<<< HEAD
+
 function New-TervisEndpointExpeditor {
     param (
         $EndpointName,
@@ -289,7 +276,7 @@ function New-TervisEndpointExpeditor {
         [scriptblock]$Script = $InstallScript
 
         Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
-=======
+
 function New-TervisEndpointCafeKiosk {
     param (
         $EndpointName,
@@ -321,7 +308,7 @@ function New-TervisEndpointCafeKiosk {
         Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
         
         Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
->>>>>>> refs/remotes/origin/master
+
 }
 
 function Set-PrincipalsAllowedToDelegateToAccount {
