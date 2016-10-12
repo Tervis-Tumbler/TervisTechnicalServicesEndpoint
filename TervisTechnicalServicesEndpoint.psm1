@@ -1,5 +1,6 @@
 ﻿#Requires -version 5.0
 #Requires -modules PasswordstatePowershell, TervisTechnicalServicesLinux
+#Requires -RunAsAdministrator
 
 function Add-IPAddressToWSManTrustedHosts {
     [CmdletBinding()]
