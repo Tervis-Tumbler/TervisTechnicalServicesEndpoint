@@ -198,12 +198,8 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 [PSCustomObject][Ordered] @{
     Name = "CafeKiosk"
     BaseName = "Cafe"
-    DefaultOU="OU=CafeKiosks,OU=Endpoints,OU=Departments,DC=tervis,DC=prv"
+    DefaultOU="OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
-    
-    #choco install adobereader -y
-
-    #choco install office365-2016-deployment-tool -version 16.0.7213.5776 -y
 
     }    
 }
@@ -226,6 +222,12 @@ function New-TervisEndpointCafeKiosk {
         $InstallScript
     )
 
+        $EndpointADObject = Get-ADComputer -Identity $EndpointName
+        
+        Write-Verbose "Adding computer object to Resource_CafeKiosks group..."
+
+        Add-ADGroupMember -Identity Resource_CafeKiosks -Members $EndpointADObject
+        
         Write-Verbose "Updating Group Policy on endpoint..."
 
         Invoke-GPUpdate -Computer $EndpointName -RandomDelayInMinutes 0 -Force | Out-Null
@@ -234,7 +236,11 @@ function New-TervisEndpointCafeKiosk {
 
         Restart-Computer -ComputerName $EndpointName -Force
 
-        Write-Verbose "Waiting for endpoint to reboot..."
+        Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+
+        Write-Verbose "Restarting endpoint again..."
+
+        Restart-Computer -ComputerName $EndpointName -Force
 
         Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
         
