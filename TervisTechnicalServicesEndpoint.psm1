@@ -132,10 +132,10 @@ function New-TervisEndpoint {
         
         New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
 
+        Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "\\$NewComputerName\C$\programdata\" -Recurse
+
     } 
     
-
-
     elseif ($EndpointType.Name -eq "Expeditor") {
         
         Write-Verbose "Starting Expeditor install..."
@@ -146,12 +146,12 @@ function New-TervisEndpoint {
         New-TervisEndpointExpeditor -EndpointName $Name -Credentials $DomainAdministratorCredential -InstallScript $Script
 
     }
+    
     elseif ($EndpointType.Name -eq "CafeKiosk") {
         
         Write-Verbose "Starting Cafe Kiosk install..."
         
         New-TervisEndpointCafeKiosk -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript -EndpointIPAddress $EndpointIPAddress     
-
 
     }
 }
@@ -173,7 +173,7 @@ function Install-TervisEndpointChocolatey {
         
         choco feature enable -n allowEmptyChecksums
 
-        choco source add -n=Tervis -s"\\tervis.prv\applications\chocolatey\"
+        choco source add -n=Tervis -s"\\$env:USERDNSDOMAIN\applications\chocolatey\"
 
         choco source list
     }
@@ -208,6 +208,8 @@ $EndpointTypes =
         choco install greenshot -y
 
         choco install office365-2016-deployment-tool -y
+
+        choco install adobereader -y
 
     }
 
@@ -317,8 +319,7 @@ function Set-PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
         $EndpointToAccessResource,
-        $Credentials = (Get-Credential),
-        $ComputerName
+        $Credentials = (Get-Credential)
     )
 
     $EndpointObjectToAccessResource = Get-ADComputer -Identity $EndpointToAccessResource
@@ -340,7 +341,7 @@ function Set-TervisEndpointNameAndDomain {
         [Parameter(Mandatory)]$OUPath,
         [Parameter(Mandatory)]$LocalAdministratorCredential,
         [Parameter(Mandatory)]$DomainAdministratorCredential,
-        $DomainName = 'tervis.prv',
+        $DomainName = "$env:USERDNSDOMAIN",
         $TimeToWaitForGroupPolicy = '180'
     )
 
