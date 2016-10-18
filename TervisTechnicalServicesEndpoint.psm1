@@ -79,6 +79,10 @@ function New-TervisEndpoint {
         [String]$PasswordstateListAPIKey
     )
 
+    Write-Verbose "Getting domain admin credentials..."
+
+    $DomainAdministratorCredential = Get-Credential -Message "Enter domain administrator credentials."
+    
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
 
     Write-Verbose "Getting IP address..."
@@ -95,11 +99,11 @@ function New-TervisEndpoint {
 
     $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 3954
 
-    Write-Verbose "Getting domain admin credentials..."
-
-    $DomainAdministratorCredential = Get-Credential -Message "Enter domain administrator credentials."
-
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential -ErrorAction Stop
+
+    Write-Verbose "Setting power configuration to High Performance"
+
+    Set-TervisEndpointPowerPlan -PowerPlanProfile 'High Performance' -ComputerName $NewComputerName -Credential $DomainAdministratorCredential
 
     Write-Verbose "Forcing a sync between domain controllers..."
     $DC = Get-ADDomainController | Select -ExpandProperty HostName
@@ -451,4 +455,34 @@ function Disable-TervisBuiltInAdminAccount {
         Disable-LocalUser -Name Administrator
 
     }
+}
+
+function Set-TervisEndpointPowerPlan {
+    param (
+        [Parameter(Position=0,Mandatory=$true)]
+        [ValidateSet('High Performance')]
+        [String]$PowerPlanProfile,
+        [Parameter(Mandatory=$true)]
+        [String]$ComputerName,
+        [Parameter(Mandatory=$true)]
+        [pscredential]$Credential
+    )
+
+    Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {
+        
+        param($PowerPlanProfile)
+
+        $VerbosePreference = 'Continue'
+
+        $PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$PowerPlanProfile`'").InstanceID
+
+        $PowerPlanGUID = $PowerPlanInstanceID.split("{")[1].split("}")[0]
+    
+        powercfg -S $PowerPlanGUID
+
+        $ActivePowerScheme = powercfg /getactivescheme
+        
+        Write-Verbose $ActivePowerScheme        
+    
+    } -ArgumentList $PowerPlanProfile
 }
