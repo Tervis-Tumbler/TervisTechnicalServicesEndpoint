@@ -215,6 +215,8 @@ $EndpointTypes =
 
         choco install adobereader -y
 
+        Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35
+
     }
 
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
