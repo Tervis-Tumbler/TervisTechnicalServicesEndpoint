@@ -7,14 +7,11 @@ function Add-IPAddressToWSManTrustedHosts {
     param (
         [parameter(Mandatory, ValueFromPipeline)][string]$IPAddress
     )
-
     Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value $IPAddress -Force
 }
 
 function Get-WSManTrustedHosts {
-
     Get-Item -Path WSMan:\localhost\Client\TrustedHosts
-
 }
 
 function Enter-PSSessionToNewEndpoint {
@@ -23,140 +20,110 @@ function Enter-PSSessionToNewEndpoint {
         [parameter(Mandatory, ValueFromPipeline)]$IPAddress
     )    
     $Credentials = Get-Credential
-
     Enter-PSSession -ComputerName $IPAddress -Credential $Credentials
 }
 
 function New-CustomerCareSignatures {
+    param (            
+        [parameter (Mandatory)][string]$UserName,
+        [parameter (Mandatory)][string]$Computername,
+        [parameter()][string]$SignatureTemplateLocation = "\\dfs-13\Departments - I Drive\Sales\DTC\Signatures"
+    )  
 
-param(            
-[parameter (Mandatory)][string]$UserName,
-[parameter (Mandatory)][string]$Computername,
-[parameter()][string]$SignatureTemplateLocation = "\\dfs-13\Departments - I Drive\Sales\DTC\Signatures"
-)  
+    Copy-Item -Path $SignatureTemplateLocation -Destination C:\SigTemp\Signatures -Recurse
 
-Copy-Item -Path $SignatureTemplateLocation -Destination C:\SigTemp\Signatures -Recurse
+    #Placeholders
+    $NameHolder = '\[Name\]'
+    $PersonalEmailHolder = '\[PersonalEmail\]'
+    $TitleHolder = '\[Title\]'
 
-#Placeholders
-$NameHolder = '\[Name\]'
-$PersonalEmailHolder = '\[PersonalEmail\]'
-$TitleHolder = '\[Title\]'
+    #Get AD info of current user
+    $ADUser = Get-ADUser -Identity $Username -Properties name,title,mail
+    $ADDisplayName = $ADUser.Name
+    $ADTitle = $ADUser.title
+    $ADEmailAddress = $ADUser.mail
 
-#Get AD info of current user
-$ADUser = Get-ADUser -Identity $Username -Properties name,title,mail
-$ADDisplayName = $ADUser.Name
-$ADTitle = $ADUser.title
-$ADEmailAddress = $ADUser.mail
+    $SignatureFiles = Get-ChildItem -Path C:\SigTemp\Signatures\*.*
 
-$SignatureFiles = Get-ChildItem -Path C:\SigTemp\Signatures\*.*
-
-ForEach ($SignatureFile in $SignatureFiles) {
-    (Get-Content $SignatureFile) |
-    ForEach-Object {    
-       $_ -replace $NameHolder, $ADDisplayName `
-          -replace $TitleHolder, $ADTitle `
-          -replace $PersonalEmailHolder, $ADEmailAddress } |
-    Set-Content $SignatureFile
+    ForEach ($SignatureFile in $SignatureFiles) {
+        (Get-Content $SignatureFile) |
+        ForEach-Object {    
+           $_ -replace $NameHolder, $ADDisplayName `
+              -replace $TitleHolder, $ADTitle `
+              -replace $PersonalEmailHolder, $ADEmailAddress } |
+        Set-Content $SignatureFile
     }
 
-Copy-Item "C:\SigTemp\Signatures" "\\$computername\c$\Users\$username\appdata\roaming\microsoft\" -Recurse -Force
-Remove-Item -Path "C:\SigTemp" -Recurse -Force
+    Copy-Item "C:\SigTemp\Signatures" "\\$computername\c$\Users\$username\appdata\roaming\microsoft\" -Recurse -Force
+    Remove-Item -Path "C:\SigTemp" -Recurse -Force
 }
 
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)]
-        [String]$EndpointTypeName,
-        
-        [Parameter(Mandatory)]
-        [String]$MACAddressWithDashes,
-        
-        [Parameter(Mandatory)]
-        [String]$NewComputerName,
-        
-        [Parameter(Mandatory)]
-        [String]$PasswordstateListAPIKey
+        [Parameter(Mandatory)][String]$EndpointTypeName,
+        [Parameter(Mandatory)][String]$MACAddressWithDashes,
+        [Parameter(Mandatory)][String]$NewComputerName,
+        [Parameter(Mandatory)][String]$PasswordstateListAPIKey
     )
 
-    Write-Verbose "Getting domain admin credentials..."
-
+    Write-Verbose "Getting domain admin credentials"
     $DomainAdministratorCredential = Get-Credential -Message "Enter domain administrator credentials."
     
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
 
-    Write-Verbose "Getting IP address..."
-
+    Write-Verbose "Getting IP address"
     $EndpointIPAddress = (Find-DHCPServerv4Lease -MACAddressWithDashes $MACAddressWithDashes).IPAddress.IPAddressToString
 
     Write-Verbose "IP address found: $EndpointIPAddress"
 
-    Write-Verbose "Adding host to WSMan Trusted Hosts..."
-
+    Write-Verbose "Adding host to WSMan Trusted Hosts"
     Add-IPAddressToWSManTrustedHosts -IPAddress $EndpointIPAddress
 
-    Write-Verbose "Getting local admin credentials..."
-
+    Write-Verbose "Getting local admin credentials"
     $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 3954
 
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential -ErrorAction Stop
 
     Write-Verbose "Setting power configuration to High Performance"
-
     Set-TervisEndpointPowerPlan -PowerPlanProfile 'High Performance' -ComputerName $NewComputerName -Credential $DomainAdministratorCredential
 
-    Write-Verbose "Forcing a sync between domain controllers..."
+    Write-Verbose "Forcing a sync between domain controllers"
     $DC = Get-ADDomainController | Select -ExpandProperty HostName
     Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
     Start-Sleep 30 
     
-    Write-Verbose "Setting Resource-Based Kerberos Constrained Delegation..."
-
+    Write-Verbose "Setting Resource-Based Kerberos Constrained Delegation"
     Set-PrincipalsAllowedToDelegateToAccount -EndpointToAccessResource $NewComputerName -Credentials $DomainAdministratorCredential
 
-    Write-Verbose "Creating TumblerAdministrator local account..."
-
+    Write-Verbose "Creating TumblerAdministrator local account"
     New-TervisLocalAdminAccount -ComputerName $NewComputerName -PasswordstateListAPIKey $PasswordstateListAPIKey
         
-    Write-Verbose "Resetting password of built-in Administrator account..."
-
+    Write-Verbose "Resetting password of built-in Administrator account"
     Set-TervisBuiltInAdminAccountPassword -ComputerName $NewComputerName -PasswordstateListAPIKey $PasswordstateListAPIKey
 
-    Write-Verbose "Disabling built-in Administrator account..."
-        
+    Write-Verbose "Disabling built-in Administrator account"
     Disable-TervisBuiltInAdminAccount -ComputerName $NewComputerName
 
-    Write-Verbose "Installing Chocolatey..."
-
+    Write-Verbose "Installing Chocolatey"
     Install-TervisEndpointChocolatey -EndpointName $NewComputerName -Credentials $DomainAdministratorCredential
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {        
-        
-        Write-Verbose "Starting Contact Center Agent install..."
-        
+        Write-Verbose "Starting Contact Center Agent install"
         New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
-
         Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "\\$NewComputerName\C$\programdata\" -Recurse
-
     } 
     
     elseif ($EndpointType.Name -eq "Expeditor") {
-        
-        Write-Verbose "Starting Expeditor install..."
-
+        Write-Verbose "Starting Expeditor install"
         [scriptblock]$Script = $EndpointType.InstallScript
         [string]$Name = $NewComputerName
-
         New-TervisEndpointExpeditor -EndpointName $Name -Credentials $DomainAdministratorCredential -InstallScript $Script
-
     }
     
     elseif ($EndpointType.Name -eq "CafeKiosk") {
-        
-        Write-Verbose "Starting Cafe Kiosk install..."
-        
+        Write-Verbose "Starting Cafe Kiosk install"
         New-TervisEndpointCafeKiosk -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript -EndpointIPAddress $EndpointIPAddress     
-
     }
 }
 
@@ -166,19 +133,12 @@ function Install-TervisEndpointChocolatey {
         $EndpointName,
         $Credentials    
     )
-
-    Write-Verbose "Installing Chocolatey..."
-
+    Write-Verbose "Installing Chocolatey"
     Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock {
-       
         iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
-        
         refreshenv
-        
         choco feature enable -n allowEmptyChecksums
-
         choco source add -n=Tervis -s"\\$env:USERDNSDOMAIN\applications\chocolatey\"
-
         choco source list
     }
 }
@@ -187,7 +147,6 @@ function Get-TervisEndpointType {
     param (
         $Name
     )
-
     $EndpointTypes | where Name -eq $Name
 }
 
@@ -198,27 +157,16 @@ $EndpointTypes =
     InstallScript = {
 
         choco install CiscoJabber -y
-
         choco install CiscoAgentDesktop -y
-
         choco install googlechrome -y
-
         choco install firefox -y
-
         choco install autohotkey -y
-
-        choco install javaruntime -version 7.0.60 -y
-
+        choco install javaruntime #-version 7.0.60 -y
         choco install greenshot -y
-
         choco install office365-2016-deployment-tool -y
-
         choco install adobereader -y
-
         Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35
-
     }
-
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
 },
 
@@ -241,24 +189,15 @@ $EndpointTypes =
     Name = "Expeditor"
     BaseName = "Expeditor"
     DefaultOU = "OU=Expeditors,OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
-    InstallScript = {
-   
+    InstallScript = {   
         choco install adobereader -y
-
         choco install office365-2016-deployment-tool  -y
-
         choco install googlechrome -y
-
         choco install firefox -y
-
         choco install CiscoJabber -y
-
         choco install autohotkey -y
-
         choco install javaruntime -version 7.0.60 -y
-
         choco install greenshot -y
-
     }         
 }
 
@@ -268,8 +207,8 @@ function New-TervisEndpointContactCenterAgent {
         $Credentials,
         $InstallScript
     )
-
-        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
+    
+    Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
 }
 
 
@@ -280,11 +219,9 @@ function New-TervisEndpointExpeditor {
         $InstallScript
     )
         
-        [string]$Name = $EndpointName
-        [scriptblock]$Script = $InstallScript
-
-        Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
-
+    [string]$Name = $EndpointName
+    [scriptblock]$Script = $InstallScript
+    Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
 }
 
 function New-TervisEndpointCafeKiosk {
@@ -295,29 +232,24 @@ function New-TervisEndpointCafeKiosk {
         $InstallScript
     )
 
-        $EndpointADObject = Get-ADComputer -Identity $EndpointName
+    $EndpointADObject = Get-ADComputer -Identity $EndpointName
         
-        Write-Verbose "Adding computer object to Resource_CafeKiosks group..."
-
-        Add-ADGroupMember -Identity Resource_CafeKiosks -Members $EndpointADObject
+    Write-Verbose "Adding computer object to Resource_CafeKiosks group"
+    Add-ADGroupMember -Identity Resource_CafeKiosks -Members $EndpointADObject
         
-        Write-Verbose "Updating Group Policy on endpoint..."
+    Write-Verbose "Updating Group Policy on endpoint"
+    Invoke-GPUpdate -Computer $EndpointName -RandomDelayInMinutes 0 -Force | Out-Null
 
-        Invoke-GPUpdate -Computer $EndpointName -RandomDelayInMinutes 0 -Force | Out-Null
+    Write-Verbose "Restarting endpoint"
+    Restart-Computer -ComputerName $EndpointName -Force
 
-        Write-Verbose "Restarting endpoint..."
+    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
 
-        Restart-Computer -ComputerName $EndpointName -Force
-
-        Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
-
-        Write-Verbose "Restarting endpoint again..."
-
-        Restart-Computer -ComputerName $EndpointName -Force
-
-        Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+    Write-Verbose "Restarting endpoint again"
+    Restart-Computer -ComputerName $EndpointName -Force
+    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
         
-        Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
+    Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
 
 }
 
@@ -329,13 +261,9 @@ function Set-PrincipalsAllowedToDelegateToAccount {
     )
 
     $EndpointObjectToAccessResource = Get-ADComputer -Identity $EndpointToAccessResource
-
     Add-ADGroupMember -Identity Privilege_PrincipalsAllowedToDelegateToAccount -Members $EndpointObjectToAccessResource
-
-    Invoke-Command -ComputerName $EndpointToAccessResource -Credential $Credentials -ScriptBlock {            
-        
-        klist purge -li 0x3e7            
-    
+    Invoke-Command -ComputerName $EndpointToAccessResource -Credential $Credentials -ScriptBlock {
+        klist purge -li 0x3e7
     }
 }
 
@@ -348,64 +276,57 @@ function Set-TervisEndpointNameAndDomain {
         [Parameter(Mandatory)]$LocalAdministratorCredential,
         [Parameter(Mandatory)]$DomainAdministratorCredential,
         $DomainName = "$env:USERDNSDOMAIN",
-        $TimeToWaitForGroupPolicy = '180'
+        $TimeToWaitForGroupPolicy = "180"
     )
 
-    Write-Verbose 'Renaming endpoint and restarting...'
-
+    Write-Verbose "Renaming endpoint and restarting"
     Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
         param($NewComputerName,$LocalAdministratorCredential)
         
         Rename-Computer -NewName $NewComputerName -LocalCredential $LocalAdministratorCredential -Force -Restart
 
-        } -ArgumentList $NewComputerName,$LocalAdministratorCredential -ErrorAction Stop
+    } -ArgumentList $NewComputerName,$LocalAdministratorCredential -ErrorAction Stop
 
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
 
-    Write-Verbose 'Adding endpoint to domain...'
-
+    Write-Verbose 'Adding endpoint to domain'
     Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
         param($NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential)
         
         Add-Computer -DomainName $DomainName -Force -Restart -OUPath $OUPath -Credential $DomainAdministratorCredential
 
-        } -ArgumentList $NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential
+    } -ArgumentList $NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential
     
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
     
     Write-Verbose 'Waiting for Group Policy update to complete.'
-
     Start-Sleep -Seconds $TimeToWaitForGroupPolicy
 
 }
 
 function Wait-ForEndpointRestart{    
-    Param(
+    param (
         [Parameter(Mandatory)]$IPAddress,
         [Parameter(Mandatory)]$PortNumbertoMonitor
     )
-    Write-Verbose "Waiting for endpoint to reboot..."
-
+    
+    Write-Verbose "Waiting for endpoint to reboot"
     Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
     
-    Write-Verbose "Waiting for endpoint to startup..."
-    
+    Write-Verbose "Waiting for endpoint to startup"    
     Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
 
-    Write-Verbose "Endpoint is up and running..."
-
+    Write-Verbose "Endpoint is up and running"
 }
 
 function New-TervisLocalAdminAccount {
-    Param(
+    param (
         [Parameter(Mandatory)]$ComputerName,
         [Parameter(Mandatory)]$PasswordstateListAPIKey
     )
     
-    $TumblerAdminCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 14
-    
+    $TumblerAdminCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 14    
     $TumblerAdminPassword = $TumblerAdminCredential.Password
-
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         param($TumblerAdminPassword)
         
@@ -416,7 +337,7 @@ function New-TervisLocalAdminAccount {
 }
 
 function Get-TervisLocalAdminAccount {
-    Param(
+    param (
         [Parameter(Mandatory)]$ComputerName,
         $LocalUserName = '*'
     )
@@ -430,13 +351,12 @@ function Get-TervisLocalAdminAccount {
 }
 
 function Set-TervisBuiltInAdminAccountPassword {
-    Param(
+    param (
         [Parameter(Mandatory)]$ComputerName,
         [Parameter(Mandatory)]$PasswordstateListAPIKey
     )
     
-    $BuiltinAdminCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 3972
-    
+    $BuiltinAdminCredential = Get-PasswordstateCredential -PasswordstateListAPIKey $PasswordstateListAPIKey -PasswordID 3972    
     $BuiltinAdminPassword = $BuiltinAdminCredential.Password
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
@@ -448,14 +368,12 @@ function Set-TervisBuiltInAdminAccountPassword {
 }
 
 function Disable-TervisBuiltInAdminAccount {
-    Param(
+    param (
         [Parameter(Mandatory)]$ComputerName
     )
 
-    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-        
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {        
         Disable-LocalUser -Name Administrator
-
     }
 }
 
@@ -470,21 +388,14 @@ function Set-TervisEndpointPowerPlan {
         [pscredential]$Credential
     )
 
-    Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {
-        
+    Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
         param($PowerPlanProfile)
 
-        $VerbosePreference = 'Continue'
-
+        $VerbosePreference = "Continue"
         $PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$PowerPlanProfile`'").InstanceID
-
         $PowerPlanGUID = $PowerPlanInstanceID.split("{")[1].split("}")[0]
-    
         powercfg -S $PowerPlanGUID
-
         $ActivePowerScheme = powercfg /getactivescheme
-        
-        Write-Verbose $ActivePowerScheme        
-    
+        Write-Verbose $ActivePowerScheme    
     } -ArgumentList $PowerPlanProfile
 }
