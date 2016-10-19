@@ -399,3 +399,21 @@ function Set-TervisEndpointPowerPlan {
         Write-Verbose $ActivePowerScheme    
     } -ArgumentList $PowerPlanProfile
 }
+
+function New-DotNet35DSCMOF {
+    configuration DotNet35 {
+
+        Import-DscResource –ModuleName 'PSDesiredStateConfiguration'
+
+        Node localhost {
+            WindowsOptionalFeature DotNet35 {
+                Ensure = "Enable"
+                Name = "netfx3"
+            }
+        }
+    }
+
+    DotNet35
+    New-DscChecksum -Path .\DotNet35\localhost.mof
+    Copy-Item -Path .\DotNet35 -Destination \\$env:USERDNSDOMAIN\applications\PowerShell -Recurse -Force
+}
