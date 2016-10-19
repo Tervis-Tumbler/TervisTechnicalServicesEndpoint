@@ -161,7 +161,7 @@ $EndpointTypes =
         choco install googlechrome -y
         choco install firefox -y
         choco install autohotkey -y
-        choco install javaruntime #-version 7.0.60 -y
+        choco install jre8 -PackageParameters "/exclude:64" -y
         choco install greenshot -y
         choco install office365-2016-deployment-tool -y
         choco install adobereader -y
@@ -196,7 +196,7 @@ $EndpointTypes =
         choco install firefox -y
         choco install CiscoJabber -y
         choco install autohotkey -y
-        choco install javaruntime -version 7.0.60 -y
+        choco install jre8 -PackageParameters "/exclude:64" -y
         choco install greenshot -y
     }         
 }
