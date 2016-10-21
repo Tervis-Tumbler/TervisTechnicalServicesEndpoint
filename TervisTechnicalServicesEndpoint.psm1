@@ -112,6 +112,10 @@ function New-TervisEndpoint {
         Write-Verbose "Starting Contact Center Agent install"
         New-TervisEndpointContactCenterAgent -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript        
         Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "\\$NewComputerName\C$\programdata\" -Recurse
+        Write-Warning -Message "Please run `"C:\Program Files (x86)\Cisco\Desktop\bin\PostInstall.exe`" locally on the endpoint."
+        Read-Host -Prompt "Press enter once installed"
+        Write-Warning -Message "Please run `"\\fs1\DisasterRecovery\Programs\Oracle\OracleOEI CRM\Oracle_OEI_OnDemand.exe`" locally on the endpoint."
+        Read-Host -Prompt "Press enter once installed"
     } 
     
     elseif ($EndpointType.Name -eq "Shipping") {
