@@ -111,7 +111,7 @@ function New-TervisEndpoint {
 
 
     if ($EndpointType.Name -eq "ContactCenterAgent") {        
-    } elseif ($EndpointType.Name -eq "Expeditor") {
+    } elseif ($EndpointType.Name -eq "Shipping") {
         Write-Verbose "Starting Expeditor install"
         [scriptblock]$Script = $EndpointType.InstallScript
         [string]$Name = $NewComputerName
@@ -403,11 +403,13 @@ function New-DotNet35DSCMOF {
     DotNet35
     New-DscChecksum -Path .\DotNet35\localhost.mof
     Copy-Item -Path .\DotNet35 -Destination \\$env:USERDNSDOMAIN\applications\PowerShell -Recurse -Force
+}
+
 function Install-WCSScaleSupport {
-        $JavaLibDir = "$env:JAVA_HOME\lib\"
-        $JavaBinDir = "$env:JAVA_HOME\bin\"
-        $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\javax.comm.properties"
-        $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\win32com.dll"
-        Copy-Item -Path $LibFileSource -Destination $JavaLibDir
-        Copy-Item -Path $BinFileSource -Destination $JavaBinDir
+    $JavaLibDir = "$env:JAVA_HOME\lib\"
+    $JavaBinDir = "$env:JAVA_HOME\bin\"
+    $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\javax.comm.properties"
+    $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\win32com.dll"
+    Copy-Item -Path $LibFileSource -Destination $JavaLibDir
+    Copy-Item -Path $BinFileSource -Destination $JavaBinDir
 }
