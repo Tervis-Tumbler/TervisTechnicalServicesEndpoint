@@ -109,14 +109,7 @@ function New-TervisEndpoint {
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
     Invoke-Command -ScriptBlock $EndpointType.InstallScript
 
-
-    if ($EndpointType.Name -eq "ContactCenterAgent") {        
-    } elseif ($EndpointType.Name -eq "Shipping") {
-        Write-Verbose "Starting Expeditor install"
-        [scriptblock]$Script = $EndpointType.InstallScript
-        [string]$Name = $NewComputerName
-        New-TervisEndpointExpeditor -EndpointName $Name -Credentials $DomainAdministratorCredential -InstallScript $Script
-    } elseif ($EndpointType.Name -eq "CafeKiosk") {
+    if ($EndpointType.Name -eq "CafeKiosk") {
         Write-Verbose "Starting Cafe Kiosk install"
         New-TervisEndpointCafeKiosk -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript -EndpointIPAddress $EndpointIPAddress     
     }
@@ -138,7 +131,7 @@ function Get-TervisEndpointType {
     $EndpointTypes | where Name -eq $Name
 }
 
-$EndpointTypes = [PSCustomObject][Ordered] @{
+$EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "ContactCenterAgent"
     InstallScript = {
         Write-Verbose "Starting Contact Center Agent install"
@@ -148,14 +141,12 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
 }
-
-[PSCustomObject][Ordered] @{
+[PSCustomObject][Ordered]@{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
     DefaultOU = "OU=BartenderPCs,OU=IndustryPCs,DC=tervis,DC=prv"
 },
-
-[PSCustomObject][Ordered] @{
+[PSCustomObject][Ordered]@{
     Name = "CafeKiosk"
     BaseName = "Cafe"
     DefaultOU = "OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
@@ -163,34 +154,15 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 
     }
 },
-
-[PSCustomObject][Ordered] @{
+[PSCustomObject][Ordered]@{
     Name = "Shipping"
     BaseName = "Ship"
     DefaultOU = "OU=Expeditors,OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
-    InstallScript = {   
-        choco install adobereader -y
-        choco install office365-2016-deployment-tool  -y
-        choco install googlechrome -y
-        choco install firefox -y
-        choco install CiscoJabber -y
-        choco install autohotkey -y
-        choco install jre8 -PackageParameters "/exclude:64" -y
-        choco install greenshot -y
+    InstallScript = {
+        Write-Verbose "Starting Expeditor install"
         Install-WCSScaleSupport
-    }         
-}
-
-function New-TervisEndpointExpeditor {
-    param (
-        $EndpointName,
-        $Credentials,
-        $InstallScript
-    )
-        
-    [string]$Name = $EndpointName
-    [scriptblock]$Script = $InstallScript
-    Invoke-Command -ComputerName $Name -Credential $Credentials -ScriptBlock $Script
+    }
+    ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
 }
 
 function New-TervisEndpointCafeKiosk {
@@ -285,15 +257,15 @@ function Set-TervisEndpointNameAndDomain {
 
 function Wait-ForEndpointRestart{    
     param (
-        [Parameter(Mandatory)]$IPAddress,
+        [Parameter(Mandatory)]$ComputerName,
         [Parameter(Mandatory)]$PortNumbertoMonitor
     )
     
     Write-Verbose "Waiting for endpoint to reboot"
-    Wait-ForPortNotAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
+    Wait-ForPortNotAvailable -ComputerName $ComputerName -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
     
     Write-Verbose "Waiting for endpoint to startup"    
-    Wait-ForPortAvailable -IPAddress $IPAddress -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
+    Wait-ForPortAvailable -ComputerName $ComputerName -PortNumbertoMonitor $PortNumbertoMonitor -WarningAction SilentlyContinue
 
     Write-Verbose "Endpoint is up and running"
 }
