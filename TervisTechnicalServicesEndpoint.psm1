@@ -165,11 +165,20 @@ $EndpointTypes = [PSCustomObject][Ordered] @{
 },
 
 [PSCustomObject][Ordered] @{
-    Name = "Expeditor"
-    BaseName = "Expeditor"
+    Name = "Shipping"
+    BaseName = "Ship"
     DefaultOU = "OU=Expeditors,OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
-    InstallScript = {}
-    ChocolateyPackageGroupNames = "StandardOfficeEndpoint"      
+    InstallScript = {   
+        choco install adobereader -y
+        choco install office365-2016-deployment-tool  -y
+        choco install googlechrome -y
+        choco install firefox -y
+        choco install CiscoJabber -y
+        choco install autohotkey -y
+        choco install jre8 -PackageParameters "/exclude:64" -y
+        choco install greenshot -y
+        Install-WCSScaleSupport
+    }         
 }
 
 function New-TervisEndpointExpeditor {
@@ -394,4 +403,11 @@ function New-DotNet35DSCMOF {
     DotNet35
     New-DscChecksum -Path .\DotNet35\localhost.mof
     Copy-Item -Path .\DotNet35 -Destination \\$env:USERDNSDOMAIN\applications\PowerShell -Recurse -Force
+function Install-WCSScaleSupport {
+        $JavaLibDir = "$env:JAVA_HOME\lib\"
+        $JavaBinDir = "$env:JAVA_HOME\bin\"
+        $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\javax.comm.properties"
+        $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\win32com.dll"
+        Copy-Item -Path $LibFileSource -Destination $JavaLibDir
+        Copy-Item -Path $BinFileSource -Destination $JavaBinDir
 }
