@@ -111,8 +111,9 @@ function New-TervisEndpoint {
 
     if ($EndpointType.Name -eq "CafeKiosk") {
         Write-Verbose "Starting Cafe Kiosk install"
-        New-TervisEndpointCafeKiosk -EndpointName $NewComputerName -Credential $DomainAdministratorCredential -InstallScript $EndpointType.InstallScript -EndpointIPAddress $EndpointIPAddress     
+        New-TervisEndpointCafeKiosk -EndpointName $NewComputerName 
     }
+    $PSDefaultParameterValues.clear()
 }
 
 Function Sync-ADDomainControllers {
@@ -167,31 +168,25 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 
 function New-TervisEndpointCafeKiosk {
     param (
-        $EndpointName,
-        $EndpointIPAddress,
-        $Credentials,
-        $InstallScript
+        $ComputerName
     )
 
-    $EndpointADObject = Get-ADComputer -Identity $EndpointName
+    $EndpointADObject = Get-ADComputer -Identity $ComputerName
         
     Write-Verbose "Adding computer object to Resource_CafeKiosks group"
     Add-ADGroupMember -Identity Resource_CafeKiosks -Members $EndpointADObject
         
     Write-Verbose "Updating Group Policy on endpoint"
-    Invoke-GPUpdate -Computer $EndpointName -RandomDelayInMinutes 0 -Force | Out-Null
+    Invoke-GPUpdate -Computer $ComputerName -RandomDelayInMinutes 0 -Force | Out-Null
 
     Write-Verbose "Restarting endpoint"
-    Restart-Computer -ComputerName $EndpointName -Force
+    Restart-Computer -ComputerName $ComputerName -Force
 
-    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+    Wait-ForEndpointRestart -ComputerName $ComputerName -PortNumbertoMonitor 5985
 
     Write-Verbose "Restarting endpoint again"
-    Restart-Computer -ComputerName $EndpointName -Force
-    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
-        
-    Invoke-Command -ComputerName $EndpointName -Credential $Credentials -ScriptBlock $InstallScript
-
+    Restart-Computer -ComputerName $ComputerName -Force
+    Wait-ForEndpointRestart -ComputerName $ComputerName -PortNumbertoMonitor 5985
 }
 
 function Add-EndpointToPrivilege_PrincipalsAllowedToDelegateToAccount {
