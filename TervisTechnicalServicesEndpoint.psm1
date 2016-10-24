@@ -140,7 +140,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse
     }
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
-    ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
+    ChocolateyPackageGroupNames = "StandardOfficeEndpoint","ContactCenter"
 }
 [PSCustomObject][Ordered]@{
     Name = "BartenderPrintStationKiosk"
