@@ -80,7 +80,7 @@ function Get-TervisEndpointIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","Shipping","CafeKiosk")][String]$EndpointTypeName,
         [Parameter(Mandatory)][String]$MACAddressWithDashes,
         [Parameter(Mandatory)][String]$NewComputerName
     )
@@ -141,7 +141,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     }
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","ContactCenter"
-}
+},
 [PSCustomObject][Ordered]@{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
@@ -154,6 +154,13 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     InstallScript = {
 
     }
+},
+[PSCustomObject][Ordered]@{
+    Name = "StandardOfficeEndpoint_Operations"
+    BaseName = "Standard"
+    DefaultOU = "OU=WorkStations,OU=Computers,OU=Operations,OU=Departments,DC=tervis,DC=prv"
+    
+    ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
 },
 [PSCustomObject][Ordered]@{
     Name = "Shipping"
@@ -252,7 +259,7 @@ function Set-TervisEndpointNameAndDomain {
 
 function Wait-ForEndpointRestart{    
     param (
-        [Parameter(Mandatory)]$ComputerName,
+        [Parameter(Mandatory)][Alias("IPAddress")]$ComputerName,
         [Parameter(Mandatory)]$PortNumbertoMonitor
     )
     
