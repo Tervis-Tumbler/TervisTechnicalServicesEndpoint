@@ -107,7 +107,10 @@ function New-TervisEndpoint {
     Disable-TervisBuiltInAdminAccount
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
-    Invoke-Command -ScriptBlock $EndpointType.InstallScript
+    
+    if ($EndpointType.InstallScript) {
+        Invoke-Command -ScriptBlock $EndpointType.InstallScript
+    }
 
     if ($EndpointType.Name -eq "CafeKiosk") {
         Write-Verbose "Starting Cafe Kiosk install"
