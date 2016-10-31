@@ -40,7 +40,7 @@ function New-CustomerCareSignatures {
 
     #Get AD info of current user
     $ADUser = Get-ADUser -Identity $Username -Properties name,title,mail
-    $ADDisplayName = $ADUser.Name
+    $ADDisplayName = $ADUser.Name.ToUpper()
     $ADTitle = $ADUser.title
     $ADEmailAddress = $ADUser.mail
 
