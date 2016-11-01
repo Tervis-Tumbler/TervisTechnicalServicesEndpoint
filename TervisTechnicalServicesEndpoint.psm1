@@ -80,7 +80,7 @@ function Get-TervisEndpointIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","Shipping","CafeKiosk")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","ShipStation","CafeKiosk")][String]$EndpointTypeName,
         [Parameter(Mandatory)][String]$MACAddressWithDashes,
         [Parameter(Mandatory)][String]$NewComputerName
     )
@@ -107,7 +107,8 @@ function New-TervisEndpoint {
     Disable-TervisBuiltInAdminAccount
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
-    
+    Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $NewComputerName)
+
     if ($EndpointType.InstallScript) {
         Invoke-Command -ScriptBlock $EndpointType.InstallScript
     }
@@ -166,9 +167,9 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
 },
 [PSCustomObject][Ordered]@{
-    Name = "Shipping"
+    Name = "ShipStation"
     BaseName = "Ship"
-    DefaultOU = "OU=Expeditors,OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
+    DefaultOU = "OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
         Write-Verbose "Starting Expeditor install"
         Install-WCSScaleSupport
