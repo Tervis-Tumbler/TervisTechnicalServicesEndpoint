@@ -80,7 +80,7 @@ function Get-TervisEndpointIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","ShipStation","CafeKiosk")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","ShipStation","CafeKiosk","IT")][String]$EndpointTypeName,
         [Parameter(Mandatory)][String]$MACAddressWithDashes,
         [Parameter(Mandatory)][String]$NewComputerName
     )
@@ -175,6 +175,12 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Install-WCSScaleSupport
     }
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
+},
+[PSCustomObject][Ordered]@{
+    Name = "IT"
+    BaseName = ""
+    DefaultOU = "OU=Computers,OU=IT,OU=Departments,DC=tervis,DC=prv"
+    ChocolateyPackageGroupNames = "StandardOfficeEndpoint","IT"
 }
 
 function New-TervisEndpointCafeKiosk {
