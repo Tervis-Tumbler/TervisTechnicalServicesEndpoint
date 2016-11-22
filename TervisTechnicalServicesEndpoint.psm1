@@ -81,7 +81,8 @@ function New-TervisEndpoint {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","ShipStation","CafeKiosk","IT")][String]$EndpointTypeName,
-        [Parameter(Mandatory)][String]$MACAddressWithDashes,
+        [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
+        [Parameter(Mandatory,ParameterSetName="EndpointIPAddress")][String]$EndpointIPAddress,
         [Parameter(Mandatory)][String]$NewComputerName
     )
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
@@ -92,7 +93,9 @@ function New-TervisEndpoint {
     Write-Verbose "Getting local admin credentials"
     $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 3954
 
-    $EndpointIPAddress = Get-TervisEndpointIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
+    if ($MACAddressWithDashes) {
+        $EndpointIPAddress = Get-TervisEndpointIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
+    }
     Add-IPAddressToWSManTrustedHosts -IPAddress $EndpointIPAddress
 
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential -ErrorAction Stop
@@ -155,15 +158,9 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "CafeKiosk"
     BaseName = "Cafe"
     DefaultOU = "OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
-    InstallScript = {
-
-    }
 },
 [PSCustomObject][Ordered]@{
-    Name = "StandardOfficeEndpoint_Operations"
-    BaseName = "Standard"
-    DefaultOU = "OU=WorkStations,OU=Computers,OU=Operations,OU=Departments,DC=tervis,DC=prv"
-    
+    Name = "StandardOfficeEndpoint"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
 },
 [PSCustomObject][Ordered]@{
@@ -178,8 +175,6 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 },
 [PSCustomObject][Ordered]@{
     Name = "IT"
-    BaseName = ""
-    DefaultOU = "OU=Computers,OU=IT,OU=Departments,DC=tervis,DC=prv"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","IT"
 }
 
@@ -235,7 +230,7 @@ function Set-TervisEndpointNameAndDomain {
     param (
         [Parameter(Mandatory)]$NewComputerName,
         [Parameter(Mandatory)]$EndpointIPAddress,
-        [Parameter(Mandatory)]$OUPath,
+        $OUPath = "OU=Sandbox,DC=tervis,DC=prv",
         [Parameter(Mandatory)]$LocalAdministratorCredential,
         [Parameter(Mandatory)]$DomainAdministratorCredential,
         $DomainName = "$env:USERDNSDOMAIN",
@@ -254,11 +249,11 @@ function Set-TervisEndpointNameAndDomain {
 
     Write-Verbose "Adding endpoint to domain"
     Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
-        param($NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential)
+        param($DomainName,$OUPath,$DomainAdministratorCredential)
         
         Add-Computer -DomainName $DomainName -Force -Restart -OUPath $OUPath -Credential $DomainAdministratorCredential
 
-    } -ArgumentList $NewComputerName,$DomainName,$OUPath,$DomainAdministratorCredential
+    } -ArgumentList $DomainName,$OUPath,$DomainAdministratorCredential
     
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
     
