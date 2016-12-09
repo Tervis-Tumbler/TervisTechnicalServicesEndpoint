@@ -80,7 +80,7 @@ function Get-TervisEndpointIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint_Operations","ShipStation","CafeKiosk","IT")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="EndpointIPAddress")][String]$EndpointIPAddress,
         [Parameter(Mandatory)][String]$NewComputerName
@@ -162,6 +162,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 [PSCustomObject][Ordered]@{
     Name = "StandardOfficeEndpoint"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
+    DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
 },
 [PSCustomObject][Ordered]@{
     Name = "ShipStation"
@@ -176,6 +177,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 [PSCustomObject][Ordered]@{
     Name = "IT"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","IT"
+    DefaultOU = "OU=Computers,OU=Information Technology,OU=Departments,DC=tervis,DC=prv"
 }
 
 function New-TervisEndpointCafeKiosk {
@@ -230,9 +232,9 @@ function Set-TervisEndpointNameAndDomain {
     param (
         [Parameter(Mandatory)]$NewComputerName,
         [Parameter(Mandatory)]$EndpointIPAddress,
-        $OUPath = "OU=Sandbox,DC=tervis,DC=prv",
         [Parameter(Mandatory)]$LocalAdministratorCredential,
         [Parameter(Mandatory)]$DomainAdministratorCredential,
+        $OUPath,
         $DomainName = "$env:USERDNSDOMAIN",
         $TimeToWaitForGroupPolicy = "180"
     )
@@ -246,6 +248,10 @@ function Set-TervisEndpointNameAndDomain {
     } -ArgumentList $NewComputerName,$LocalAdministratorCredential -ErrorAction Stop
 
     Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+
+    if (!($OUPath)) {
+        $OUPath = "OU=Sandbox,DC=tervis,DC=prv"
+    }
 
     Write-Verbose "Adding endpoint to domain"
     Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
