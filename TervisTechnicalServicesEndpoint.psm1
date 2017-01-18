@@ -1,5 +1,5 @@
 ﻿#Requires -version 5.0
-#Requires -modules PasswordstatePowershell, TervisTechnicalServicesLinux, TervisChocolatey
+#Requires -modules PasswordstatePowershell, TervisChocolatey, TervisNetTCPIP
 #Requires -RunAsAdministrator
 
 function Add-IPAddressToWSManTrustedHosts {
