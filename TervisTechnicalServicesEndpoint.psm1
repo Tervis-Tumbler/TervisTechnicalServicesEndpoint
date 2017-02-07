@@ -400,7 +400,7 @@ function Install-WCSScaleSupport {
 }
 
 function Set-TervisUserAsLocalAdmin {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param (
         [Parameter(Mandatory=$true)]$SAMAccountName,
         $ComputerName
@@ -414,15 +414,13 @@ function Set-TervisUserAsLocalAdmin {
             select -ExpandProperty Name
     }
 
-    Write-Verbose 'Adding computer to "Local - Computer Admin Group Exception"'
-    $ComputerObject = Get-ADComputer -Identity $ComputerName
-    Add-ADGroupMember -Identity "Local - Computer Admin Group Exception" -Members $ComputerObject
-
+    $WhatIf = $PSCmdlet.ShouldProcess("$ComputerName","Add $SAMAccountName as local admin")
     try {
         Write-Verbose "Connecting to remote computer"
-        $Result = Invoke-Command -ComputerName $ComputerName -ArgumentList $SAMAccountName -ScriptBlock {
+        $Result = Invoke-Command -ComputerName $ComputerName -ArgumentList $SAMAccountName,$WhatIf -ScriptBlock {
             param (
-                $SAMAccountName
+                $SAMAccountName,
+                $WhatIf
             )
 
             #$LocalAdministrators = Get-LocalGroupMember -Group Administrators | select -ExpandProperty Name
@@ -435,16 +433,23 @@ function Set-TervisUserAsLocalAdmin {
                 return "Set"
             } else {
                 try {
-                    # PowerShell 2.0 Compatible
-                    $LocalAdminGroup.Add("WinNT://$env:USERDOMAIN/$SAMAccountName,user") | Out-Null
-                    
-                    #Add-LocalGroupMember -Group Administrators -Member $SAMAccountName -ErrorAction Stop
-                    return "Set"
+                    if ($WhatIf) {
+                        #Add-LocalGroupMember -Group Administrators -Member $SAMAccountName -ErrorAction Stop | 
+                        # PowerShell 2.0 Compatible
+                        $LocalAdminGroup.Add("WinNT://$env:USERDOMAIN/$SAMAccountName,user") | Out-Null
+                        return "Set"
+                    } else {
+                        return "WhatIf"
+                    }
                 } catch {
                     return "Not Set"
                 }
             }
         } -ErrorAction Stop
+
+        Write-Verbose 'Adding computer to "Local - Computer Admin Group Exception"'
+        $ComputerObject = Get-ADComputer -Identity $ComputerName
+        Add-ADGroupMember -Identity "Local - Computer Admin Group Exception" -Members $ComputerObject
     } catch {
         $Result = "No connection"
     }
@@ -454,4 +459,20 @@ function Set-TervisUserAsLocalAdmin {
         ComputerName = $ComputerName
         LocalAdminSet = $Result
     }
+}
+
+function Set-TervisADGroupAsLocalAdmin {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]$Group
+    )
+
+    $GroupMembers = Get-ADGroupMember -Identity $Group -Recursive -ErrorAction Stop |
+        where objectClass -EQ user |
+        select -ExpandProperty SAMAccountName
+
+    Start-ParallelWork -Parameters $GroupMembers -ScriptBlock {
+        param ($Parameter)
+        Set-TervisUserAsLocalAdmin -SAMAccountName $Parameter
+    } | select -Property SAMAccountName,ComputerName,LocalAdminSet
 }
