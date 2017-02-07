@@ -398,3 +398,60 @@ function Install-WCSScaleSupport {
     Copy-Item -Path $LibFileSource -Destination $JavaLibDir
     Copy-Item -Path $BinFileSource -Destination $JavaBinDir
 }
+
+function Set-TervisUserAsLocalAdmin {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]$SAMAccountName,
+        $ComputerName
+    )
+
+    if ($ComputerName -eq $null) {
+        Write-Verbose "Finding user's last used computer"
+        $ComputerName = Find-TervisADUsersComputer -SAMAccountName $SAMAccountName -Properties LastLogonDate |
+            sort -Property LastLogonDate |
+            select -Last 1 |
+            select -ExpandProperty Name
+    }
+
+    Write-Verbose 'Adding computer to "Local - Computer Admin Group Exception"'
+    $ComputerObject = Get-ADComputer -Identity $ComputerName
+    Add-ADGroupMember -Identity "Local - Computer Admin Group Exception" -Members $ComputerObject
+
+    try {
+        Write-Verbose "Connecting to remote computer"
+        $Result = Invoke-Command -ComputerName $ComputerName -ArgumentList $SAMAccountName -ScriptBlock {
+            param (
+                $SAMAccountName
+            )
+
+            #$LocalAdministrators = Get-LocalGroupMember -Group Administrators | select -ExpandProperty Name
+            # PowerShell 2.0 Compatible 
+            $LocalAdminGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
+            $LocalAdministrators = $LocalAdminGroup.invoke("members") | 
+                foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)}
+
+            if ($LocalAdministrators -match $SAMAccountName) {
+                return "Set"
+            } else {
+                try {
+                    # PowerShell 2.0 Compatible
+                    $LocalAdminGroup.Add("WinNT://$env:USERDOMAIN/$SAMAccountName,user") | Out-Null
+                    
+                    #Add-LocalGroupMember -Group Administrators -Member $SAMAccountName -ErrorAction Stop
+                    return "Set"
+                } catch {
+                    return "Not Set"
+                }
+            }
+        } -ErrorAction Stop
+    } catch {
+        $Result = "No connection"
+    }
+
+    [PSCustomObject][Ordered]@{
+        SAMAccountName = $SAMAccountName
+        ComputerName = $ComputerName
+        LocalAdminSet = $Result
+    }
+}
