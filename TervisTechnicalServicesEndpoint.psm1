@@ -476,3 +476,67 @@ function Set-TervisADGroupAsLocalAdmin {
         Set-TervisUserAsLocalAdmin -SAMAccountName $Parameter
     } | select -Property SAMAccountName,ComputerName,LocalAdminSet
 }
+
+function Get-TervisLocalAdmin {
+    param (
+        [Parameter(ParameterSetName="ByUser")]$SAMAccountName,
+        [Parameter(ParameterSetName="ByComputer")]$ComputerName
+    )
+    
+    if ($SAMAccountName) {
+        $ComputerName = Find-TervisADUsersComputer -SAMAccountName $SAMAccountName |
+            select -ExpandProperty Name
+    }
+
+    foreach ($Computer in $ComputerName) {
+        try {
+            $LocalAdmins =Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+                $LocalAdminGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
+                $LocalAdmins = $LocalAdminGroup.invoke("members") | 
+                    foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)}
+                $LocalAdmins
+            } -ErrorAction Stop
+
+            if ($SAMAccountName) {
+                if ($LocalAdmins -match $SAMAccountName) {
+                    $IsLocalAdmin = $true
+                } else {
+                    $IsLocalAdmin = $false
+                }
+            } else {
+                $IsLocalAdmin = $null
+            }
+
+            [PSCustomObject][Ordered]@{
+                ComputerName = $Computer
+                SAMAccountName = $SAMAccountName
+                IsLocalAdmin = $IsLocalAdmin
+                LocalAdmins = $LocalAdmins
+            
+            }
+        } catch {
+            [PSCustomObject][Ordered]@{
+                ComputerName = $Computer
+                SAMAccountName = $SAMAccountName
+                IsLocalAdmin = $null            
+                LocalAdmins = "No connection"
+            }
+        }
+    }
+
+}
+
+function Get-TervisLocalAdminsForADGroup {
+    param (
+        $ADGroupIdentity
+    )
+
+    $ADGroupMembers = Get-ADGroupMember -Identity $ADGroupIdentity -Recursive
+
+    Start-ParallelWork -Parameters $ADGroupMembers.SAMAccountName -MaxConcurrentJobs 5 -ScriptBlock {
+        param (
+            $Parameter
+        )
+        Get-TervisLocalAdmin -SAMAccountName $Parameter
+    } | select ComputerName,SAMAccountName,IsLocalAdmin,LocalAdmins
+}
