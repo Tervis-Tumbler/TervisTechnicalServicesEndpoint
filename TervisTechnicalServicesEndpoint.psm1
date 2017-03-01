@@ -489,26 +489,6 @@ function Set-TervisADGroupAsLocalAdmin {
     } | select -Property SAMAccountName,ComputerName,LocalAdminSet
 }
 
-function Get-TervisComputerLocalAdmin {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory=$true)]$ComputerName
-    )
-    
-    Write-Verbose "Connecting to remote computer"
-        $Result = Invoke-Command -ComputerName $ComputerName -ArgumentList $SAMAccountName,$WhatIf -ScriptBlock {
-            param (
-                $SAMAccountName,
-                $WhatIf
-            )
-
-            $LocalAdminGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
-            $LocalAdministrators = $LocalAdminGroup.invoke("members") | 
-                foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)}
-        }
-
-        $Result
-}
 function Get-TervisLocalAdmin {
     param (
         [Parameter(ParameterSetName="ByUser")]$SAMAccountName,
