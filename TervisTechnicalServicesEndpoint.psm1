@@ -489,6 +489,7 @@ function Set-TervisADGroupAsLocalAdmin {
     } | select -Property SAMAccountName,ComputerName,LocalAdminSet
 }
 
+function Get-TervisComputerLocalAdmin {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]$ComputerName
