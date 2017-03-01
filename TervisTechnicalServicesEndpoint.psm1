@@ -80,7 +80,7 @@ function Get-TervisEndpointIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="EndpointIPAddress")][String]$EndpointIPAddress,
         [Parameter(Mandatory)][String]$NewComputerName
@@ -178,6 +178,18 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "IT"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","IT"
     DefaultOU = "OU=Computers,OU=Information Technology,OU=Departments,DC=tervis,DC=prv"
+},
+[PSCustomObject][Ordered]@{
+    Name = "MESAuditor"
+    BaseName = "MESAuditor"
+    ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
+    DefaultOU = "OU=Computers,OU=MES Auditors,OU=Operations,OU=Departments,DC=tervis,DC=prv"
+    InstallScript = {
+        Invoke-Command -ComputerName $NewComputerName -ScriptBlock {            
+            Remove-LocalGroupMember -Group Users -Member "TERVIS\Domain Users"
+            Add-LocalGroupMember -Group Users -Member Privilege_MESAuditorStationUsers
+        }
+    }
 }
 
 function New-TervisEndpointCafeKiosk {
@@ -477,6 +489,25 @@ function Set-TervisADGroupAsLocalAdmin {
     } | select -Property SAMAccountName,ComputerName,LocalAdminSet
 }
 
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]$ComputerName
+    )
+    
+    Write-Verbose "Connecting to remote computer"
+        $Result = Invoke-Command -ComputerName $ComputerName -ArgumentList $SAMAccountName,$WhatIf -ScriptBlock {
+            param (
+                $SAMAccountName,
+                $WhatIf
+            )
+
+            $LocalAdminGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
+            $LocalAdministrators = $LocalAdminGroup.invoke("members") | 
+                foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)}
+        }
+
+        $Result
+}
 function Get-TervisLocalAdmin {
     param (
         [Parameter(ParameterSetName="ByUser")]$SAMAccountName,
