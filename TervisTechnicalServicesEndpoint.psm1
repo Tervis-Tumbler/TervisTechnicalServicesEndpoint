@@ -411,14 +411,14 @@ function Install-WCSScaleSupport {
     Copy-Item -Path $BinFileSource -Destination $JavaBinDir
 }
 
-function Set-TervisUserAsLocalAdmin {
-    [CmdletBinding(SupportsShouldProcess=$true)]
+function Set-TervisUserAsLocalAdministrator {
+    [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory=$true)]$SAMAccountName,
+        [Parameter(Mandatory)]$SAMAccountName,
         $ComputerName
     )
 
-    if ($ComputerName -eq $null) {
+    if (-not $ComputerName) {
         Write-Verbose "Finding user's last used computer"
         $ComputerName = Find-TervisADUsersComputer -SAMAccountName $SAMAccountName -Properties LastLogonDate |
             sort -Property LastLogonDate |
@@ -437,8 +437,8 @@ function Set-TervisUserAsLocalAdmin {
 
             #$LocalAdministrators = Get-LocalGroupMember -Group Administrators | select -ExpandProperty Name
             # PowerShell 2.0 Compatible 
-            $LocalAdminGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
-            $LocalAdministrators = $LocalAdminGroup.invoke("members") | 
+            $LocalAdministratorsGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
+            $LocalAdministrators = $LocalAdministratorsGroup.invoke("members") | 
                 foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)}
 
             if ($LocalAdministrators -match $SAMAccountName) {
@@ -448,7 +448,7 @@ function Set-TervisUserAsLocalAdmin {
                     if ($WhatIf) {
                         #Add-LocalGroupMember -Group Administrators -Member $SAMAccountName -ErrorAction Stop | 
                         # PowerShell 2.0 Compatible
-                        $LocalAdminGroup.Add("WinNT://$env:USERDOMAIN/$SAMAccountName,user") | Out-Null
+                        $LocalAdministratorsGroup.Add("WinNT://$env:USERDOMAIN/$SAMAccountName,user") | Out-Null
                         return "Set"
                     } else {
                         return "WhatIf"
@@ -485,7 +485,7 @@ function Set-TervisADGroupAsLocalAdmin {
 
     Start-ParallelWork -Parameters $GroupMembers -ScriptBlock {
         param ($Parameter)
-        Set-TervisUserAsLocalAdmin -SAMAccountName $Parameter
+        Set-TervisUserAsLocalAdministrator -SAMAccountName $Parameter
     } | select -Property SAMAccountName,ComputerName,LocalAdminSet
 }
 
