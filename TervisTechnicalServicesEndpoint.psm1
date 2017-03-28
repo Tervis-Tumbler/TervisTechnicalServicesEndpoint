@@ -103,7 +103,7 @@ function New-TervisEndpoint {
     $PSDefaultParameterValues = @{"*:ComputerName" = $NewComputerName}
     Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
     Sync-ADDomainControllers
-    Add-EndpointToPrivilege_PrincipalsAllowedToDelegateToAccount
+    Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
     Remove-KerberosTickets
     New-TervisLocalAdminAccount
     Set-TervisBuiltInAdminAccountPassword
@@ -215,7 +215,7 @@ function New-TervisEndpointCafeKiosk {
     Wait-ForEndpointRestart -ComputerName $ComputerName -PortNumbertoMonitor 5985
 }
 
-function Add-EndpointToPrivilege_PrincipalsAllowedToDelegateToAccount {
+function Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount {
     [CmdletBinding()]
     param (
         $ComputerName
