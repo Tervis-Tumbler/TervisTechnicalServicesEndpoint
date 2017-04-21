@@ -162,7 +162,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 [PSCustomObject][Ordered]@{
     Name = "StandardOfficeEndpoint"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
-    DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
+    DefaultOU = "OU=Sandbox,DC=tervis,DC=prv"
 },
 [PSCustomObject][Ordered]@{
     Name = "ShipStation"
