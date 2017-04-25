@@ -637,3 +637,14 @@ function Install-TervisEPSViewer {
     Install-TervisChocolatey -ComputerName $ComputerName -Verbose
     Invoke-Command -ComputerName $ComputerName -ScriptBlock $InstallScript -Verbose
 }
+
+function Remove-LocalSecurityPolicyConfiguration {
+    param (
+        [Parameter(Mandatory)]$ComputerName
+    )
+    $GroupPolicyPath = "C:\windows\system32\GroupPolicy\"
+    $RemoteGroupPolicyPath = $GroupPolicyPath | ConvertTo-RemotePath -ComputerName $ComputerName
+    Remove-Item -Path "$RemoteGroupPolicyPath\Machine" -Recurse -Force
+    Remove-Item -Path "$RemoteGroupPolicyPath\User" -Recurse -Force
+    Remove-Item -Path "$RemoteGroupPolicyPath\gpt.ini"
+}
