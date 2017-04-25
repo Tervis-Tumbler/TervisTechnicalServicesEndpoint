@@ -648,3 +648,14 @@ function Remove-LocalSecurityPolicyConfiguration {
     Remove-Item -Path "$RemoteGroupPolicyPath\User" -Recurse -Force
     Remove-Item -Path "$RemoteGroupPolicyPath\gpt.ini"
 }
+
+function Invoke-RemoveAndRefreshGroupPolicy {
+    param (
+        [Parameter(Mandatory)]$ComputerName
+    )
+    Remove-LocalSecurityPolicyConfiguration -ComputerName $ComputerName
+    Restart-Computer -ComputerName $ComputerName -Force
+    Wait-ForNodeRestart -ComputerName $ComputerName
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {gpupdate /force}
+    Restart-Computer -ComputerName $ComputerName
+}
