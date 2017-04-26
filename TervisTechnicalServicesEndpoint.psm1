@@ -2,19 +2,6 @@
 #Requires -modules PasswordstatePowershell, TervisChocolatey, TervisNetTCPIP
 #Requires -RunAsAdministrator
 
-function Add-IPAddressToWSManTrustedHosts {
-    [CmdletBinding()]
-    param (
-        [parameter(Mandatory, ValueFromPipeline)][string]$IPAddress
-    )
-    Write-Verbose "Adding $IPAddress to WSMan Trusted Hosts"
-    Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value $IPAddress -Force
-}
-
-function Get-WSManTrustedHosts {
-    Get-Item -Path WSMan:\localhost\Client\TrustedHosts
-}
-
 function Enter-PSSessionToNewEndpoint {
     [CmdletBinding()]
     param (
