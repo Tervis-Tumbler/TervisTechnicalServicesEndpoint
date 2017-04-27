@@ -46,22 +46,22 @@ function New-CustomerCareSignatures {
     Remove-Item -Path "C:\SigTemp" -Recurse -Force
 }
 
-function Get-TervisEndpointIPAddressAsString {
+function Get-TervisIPAddressAsString {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)][String]$MACAddressWithDashes
     )
 
     Write-Verbose "Getting IP address"
-    $EndpointIPAddress = Find-DHCPServerv4LeaseIPAddress -MACAddressWithDashes $MACAddressWithDashes -AsString
+    $IPAddress = Find-DHCPServerv4LeaseIPAddress -MACAddressWithDashes $MACAddressWithDashes -AsString
     
-    if (-not $EndpointIPAddress) { 
+    if (-not $IPAddress) { 
         throw "No ip v4 lease found for MacAddress $MACAddressWithDashes" 
     } else {
-        Write-Verbose "IP address found: $EndpointIPAddress"
+        Write-Verbose "IP address found: $IPAddress"
     }
 
-    $EndpointIPAddress
+    $IPAddress
 }
 
 function New-TervisEndpoint {    
@@ -69,25 +69,23 @@ function New-TervisEndpoint {
     param (
         [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
-        [Parameter(Mandatory,ParameterSetName="EndpointIPAddress")][String]$EndpointIPAddress,
-        [Parameter(Mandatory)][String]$NewComputerName
+        [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
+        [Parameter(Mandatory)][String]$ComputerName
     )
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
 
-    Write-Verbose "Getting domain admin credentials"
-    $DomainAdministratorCredential = Get-Credential -Message "Enter credentials used to join computer to domain"
-    
     Write-Verbose "Getting local admin credentials"
     $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 3954
 
     if ($MACAddressWithDashes) {
-        $EndpointIPAddress = Get-TervisEndpointIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
+        $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
     }
-    Add-IPAddressToWSManTrustedHosts -IPAddress $EndpointIPAddress
+    Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
 
-    Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -NewComputerName $NewComputerName -EndpointIPAddress $EndpointIPAddress -LocalAdministratorCredential $LocalAdministratorCredential -DomainAdministratorCredential $DomainAdministratorCredential -ErrorAction Stop
+    Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
-    $PSDefaultParameterValues = @{"*:ComputerName" = $NewComputerName}
+    $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+    Invoke-Command -ScriptBlock {gpupdate /force}
     Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
     Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
@@ -97,7 +95,7 @@ function New-TervisEndpoint {
     Disable-TervisBuiltInAdminAccount
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
-    Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $NewComputerName)
+    Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $ComputerName)
 
     if ($EndpointType.InstallScript) {
         Invoke-Command -ScriptBlock $EndpointType.InstallScript
@@ -105,7 +103,7 @@ function New-TervisEndpoint {
 
     if ($EndpointType.Name -eq "CafeKiosk") {
         Write-Verbose "Starting Cafe Kiosk install"
-        New-TervisEndpointCafeKiosk -EndpointName $NewComputerName 
+        New-TervisEndpointCafeKiosk -EndpointName $ComputerName 
     }
     $PSDefaultParameterValues.clear()
 }
@@ -172,7 +170,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
     DefaultOU = "OU=Computers,OU=MES Auditors,OU=Operations,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
-        Invoke-Command -ComputerName $NewComputerName -ScriptBlock {            
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {            
             Remove-LocalGroupMember -Group Users -Member "TERVIS\Domain Users"
             Add-LocalGroupMember -Group Users -Member Privilege_MESAuditorStationUsers
         }
@@ -225,46 +223,22 @@ function Remove-KerberosTickets {
     }
 }
 
-
 function Set-TervisEndpointNameAndDomain {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)]$NewComputerName,
-        [Parameter(Mandatory)]$EndpointIPAddress,
+        [Parameter(Mandatory)]$ComputerName,
+        [Parameter(Mandatory)]$IPAddress,
         [Parameter(Mandatory)]$LocalAdministratorCredential,
-        [Parameter(Mandatory)]$DomainAdministratorCredential,
         $OUPath,
-        $DomainName = "$env:USERDNSDOMAIN",
-        $TimeToWaitForGroupPolicy = "180"
+        $DomainName = "$env:USERDNSDOMAIN"
     )
-
-    Write-Verbose "Renaming endpoint and restarting"
-    Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
-        param($NewComputerName,$LocalAdministratorCredential)
-        
-        Rename-Computer -NewName $NewComputerName -LocalCredential $LocalAdministratorCredential -Force -Restart
-
-    } -ArgumentList $NewComputerName,$LocalAdministratorCredential -ErrorAction Stop
-
-    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
+    Invoke-TervisRenameComputerOnOrOffDomain -ComputerName $ComputerName -IPAddress $IPAddress -Credential $LocalAdministratorCredential
 
     if (!($OUPath)) {
         $OUPath = "OU=Sandbox,DC=tervis,DC=prv"
     }
 
-    Write-Verbose "Adding endpoint to domain"
-    Invoke-Command -ComputerName $EndpointIPAddress -Credential $LocalAdministratorCredential -ScriptBlock {
-        param($DomainName,$OUPath,$DomainAdministratorCredential)
-        
-        Add-Computer -DomainName $DomainName -Force -Restart -OUPath $OUPath -Credential $DomainAdministratorCredential
-
-    } -ArgumentList $DomainName,$OUPath,$DomainAdministratorCredential
-    
-    Wait-ForEndpointRestart -IPAddress $EndpointIPAddress -PortNumbertoMonitor 5985
-    
-    Write-Verbose "Waiting for Group Policy update to complete"
-    Start-Sleep -Seconds $TimeToWaitForGroupPolicy
-
+    Invoke-TervisJoinDomain -OUPath $OUPath -ComputerName $ComputerName -IPAddress $IPAddress -Credential $LocalAdministratorCredential    
 }
 
 function Wait-ForEndpointRestart{    
