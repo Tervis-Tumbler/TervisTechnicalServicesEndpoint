@@ -266,13 +266,10 @@ function New-TervisLocalAdminAccount {
 
     $TumblerAdminCredential = Get-PasswordstateCredential -PasswordID 14    
     $TumblerAdminPassword = $TumblerAdminCredential.Password
-    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-        param($TumblerAdminPassword)
-        
-        New-LocalUser -Name "TumblerAdministrator" -Password $TumblerAdminPassword -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {        
+        New-LocalUser -Name "TumblerAdministrator" -Password $Using:TumblerAdminPassword -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
         Add-LocalGroupMember -Name "Administrators" -Member "TumblerAdministrator"
-
-    } -ArgumentList $TumblerAdminPassword
+    }
 }
 
 function Get-TervisLocalAdminAccount {
@@ -280,13 +277,9 @@ function Get-TervisLocalAdminAccount {
         [Parameter(Mandatory)]$ComputerName,
         $LocalUserName = '*'
     )
-
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-        param($LocaUserName)
-        
-        Get-LocalUser -Name $LocaUserName
-
-    } -ArgumentList $LocalUserName
+        Get-LocalUser -Name $Using:LocaUserName
+    }
 }
 
 function Set-TervisBuiltInAdminAccountPassword {
@@ -300,11 +293,8 @@ function Set-TervisBuiltInAdminAccountPassword {
     $BuiltinAdminPassword = $BuiltinAdminCredential.Password
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-        param($BuiltinAdminPassword)
-        
-        Set-LocalUser -Name Administrator -Password $BuiltinAdminPassword
-
-    } -ArgumentList $BuiltinAdminPassword
+        Set-LocalUser -Name Administrator -Password $Using:BuiltinAdminPassword
+    }
 }
 
 function Disable-TervisBuiltInAdminAccount {
@@ -333,14 +323,12 @@ function Set-TervisEndpointPowerPlan {
 
     Write-Verbose "Setting power configuration to $PowerPlanProfile"
     $ActivePowerScheme = Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
-        param($PowerPlanProfile)
-
-        $PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$PowerPlanProfile`'").InstanceID
+        $PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$Using:PowerPlanProfile`'").InstanceID
         $PowerPlanGUID = $PowerPlanInstanceID.split("{")[1].split("}")[0]
         powercfg -S $PowerPlanGUID
         $ActivePowerScheme = powercfg /getactivescheme
         $ActivePowerScheme  
-    } -ArgumentList $PowerPlanProfile
+    }
 
     Write-Verbose $ActivePowerScheme
 }
