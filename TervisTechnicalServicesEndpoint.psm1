@@ -422,6 +422,61 @@ function Set-TervisUserAsLocalAdministrator {
     }
 }
 
+function Set-TervisUserAsRemoteDesktopUser {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory)]$SAMAccountName,
+        $ComputerName
+    )
+
+    if (-not $ComputerName) {
+        Write-Verbose "Finding user's last used computer"
+        $ComputerName = Find-TervisADUsersComputer -SAMAccountName $SAMAccountName -Properties LastLogonDate |
+            sort -Property LastLogonDate |
+            select -Last 1 |
+            select -ExpandProperty Name
+    }
+
+    $WhatIf = $PSCmdlet.ShouldProcess("$ComputerName","Add $SAMAccountName as Remote Desktop User")
+    try {
+        Write-Verbose "Connecting to remote computer"
+        $Result = Invoke-Command -ComputerName $ComputerName -ArgumentList $SAMAccountName,$WhatIf -ScriptBlock {
+            param (
+                $SAMAccountName,
+                $WhatIf
+            )
+
+            $RemoteDesktopUsersGroup = [ADSI]"WinNT://$env:COMPUTERNAME/Remote Desktop Users,group"
+            $RemoteDesktopUsers = $RemoteDesktopUsersGroup.invoke("members") | 
+                foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)}
+
+            if ($RemoteDesktopUsers -match $SAMAccountName) {
+                return "Set"
+            } else {
+                try {
+                    if ($WhatIf) {
+                        $RemoteDesktopUsersGroup.Add("WinNT://$env:USERDOMAIN/$SAMAccountName,user") | Out-Null
+                        return "Set"
+                    } else {
+                        return "WhatIf"
+                    }
+                } catch {
+                    return "Not Set"
+                }
+            }
+        } -ErrorAction Stop
+    } catch {
+        $Result = "No connection"
+    }
+
+    [PSCustomObject][Ordered]@{
+        SAMAccountName = $SAMAccountName
+        ComputerName = $ComputerName
+        RemoteDesktopUserSet = $Result
+    }
+}
+
+
 function Set-TervisADGroupAsLocalAdmin {
     [CmdletBinding()]
     param (
