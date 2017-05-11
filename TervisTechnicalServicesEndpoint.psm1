@@ -85,6 +85,7 @@ function New-TervisEndpoint {
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+    Write-Verbose "Invoking Group Policy update"
     Invoke-Command -ScriptBlock {gpupdate /force}
     Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
     Sync-ADDomainControllers
@@ -232,12 +233,14 @@ function Set-TervisEndpointNameAndDomain {
         $OUPath,
         $DomainName = "$env:USERDNSDOMAIN"
     )
+    Write-Verbose "Renaming computer to $ComputerName"
     Invoke-TervisRenameComputerOnOrOffDomain -ComputerName $ComputerName -IPAddress $IPAddress -Credential $LocalAdministratorCredential
 
     if (!($OUPath)) {
         $OUPath = "OU=Sandbox,DC=tervis,DC=prv"
     }
-
+    Write-Verbose "Setting OU path to $OUPath"
+    Write-Verbose "Joining computer to $DomainName"
     Invoke-TervisJoinDomain -OUPath $OUPath -ComputerName $ComputerName -IPAddress $IPAddress -Credential $LocalAdministratorCredential    
 }
 
