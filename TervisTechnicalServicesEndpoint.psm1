@@ -85,8 +85,7 @@ function New-TervisEndpoint {
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
-    Write-Verbose "Invoking Group Policy update"
-    Invoke-Command -ScriptBlock {gpupdate /force}
+    Invoke-TervisGroupPolicyUpdate    
     Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
     Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
@@ -665,4 +664,16 @@ function Invoke-RemoveAndRefreshGroupPolicy {
     Wait-ForNodeRestart -ComputerName $ComputerName
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {gpupdate /force}
     Restart-Computer -ComputerName $ComputerName
+}
+
+function Invoke-TervisGroupPolicyUpdate {    
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process{
+        Write-Verbose "Updating Group Policy on $ComputerName"
+        Invoke-GPUpdate -Boot -Computer $ComputerName -RandomDelayInMinutes 0 -Force
+        Write-Verbose "Waiting on computer restart"
+        Wait-ForNodeRestart @PSBoundParameters
+    }
 }
