@@ -1,5 +1,5 @@
 ﻿#Requires -version 5.0
-#Requires -modules PasswordstatePowershell, TervisChocolatey, TervisNetTCPIP
+#Requires -modules PasswordstatePowershell, TervisChocolatey, TervisNetTCPIP, TervisApplication
 #Requires -RunAsAdministrator
 
 function Enter-PSSessionToNewEndpoint {
