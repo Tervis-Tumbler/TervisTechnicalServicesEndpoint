@@ -85,7 +85,7 @@ function New-TervisEndpoint {
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
-    Invoke-TervisGroupPolicyUpdate    
+    Invoke-TervisGroupPolicyUpdateForceRestart 
     Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
     Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
@@ -666,7 +666,7 @@ function Invoke-RemoveAndRefreshGroupPolicy {
     Restart-Computer -ComputerName $ComputerName
 }
 
-function Invoke-TervisGroupPolicyUpdate {    
+function Invoke-TervisGroupPolicyUpdateForceRestart {    
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
