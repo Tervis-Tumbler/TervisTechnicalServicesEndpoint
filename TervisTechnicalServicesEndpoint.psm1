@@ -96,16 +96,16 @@ function New-TervisEndpoint {
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
     Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $ComputerName)
+    $PSDefaultParameterValues.clear()
 
     if ($EndpointType.InstallScript) {
-        Invoke-Command -ScriptBlock $EndpointType.InstallScript
+        Invoke-Command -ScriptBlock $EndpointType.InstallScript -ArgumentList $ComputerName
     }
 
     if ($EndpointType.Name -eq "CafeKiosk") {
         Write-Verbose "Starting Cafe Kiosk install"
         New-TervisEndpointCafeKiosk -EndpointName $ComputerName 
-    }
-    $PSDefaultParameterValues.clear()
+    }    
 }
 
 Function Sync-ADDomainControllers {
@@ -155,7 +155,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     DefaultOU = "OU=Computers,OU=Shipping Stations,OU=Operations,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
         Write-Verbose "Starting Expeditor install"
-        Install-WCSScaleSupport
+        Install-WCSScaleSupport -ComputerName $ComputerName
     }
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
 },
@@ -354,12 +354,19 @@ function New-DotNet35DSCMOF {
 }
 
 function Install-WCSScaleSupport {
+    param (
+        $ComputerName
+    )
     $JavaLibDir = "$env:JAVA_HOME\lib\"
     $JavaBinDir = "$env:JAVA_HOME\bin\"
+    $RemoteJavaLibDir = $JavaLibDir | ConvertTo-RemotePath -ComputerName $ComputerName
+    $RemoteJavaBinDir = $JavaBinDir | ConvertTo-RemotePath -ComputerName $ComputerName
+    New-Item -Path $RemoteJavaBinDir -ItemType Directory -Force
+    New-Item -Path $RemoteJavaLibDir -ItemType Directory -Force
     $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\javax.comm.properties"
     $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\win32com.dll"
-    Copy-Item -Path $LibFileSource -Destination $JavaLibDir
-    Copy-Item -Path $BinFileSource -Destination $JavaBinDir
+    Copy-Item -Path $LibFileSource -Destination $RemoteJavaLibDir
+    Copy-Item -Path $BinFileSource -Destination $RemoteJavaBinDir
 }
 
 function Set-TervisUserAsLocalAdministrator {
