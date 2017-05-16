@@ -357,16 +357,19 @@ function Install-WCSScaleSupport {
     param (
         $ComputerName
     )
-    $JavaLibDir = "$env:JAVA_HOME\lib\"
-    $JavaBinDir = "$env:JAVA_HOME\bin\"
-    $RemoteJavaLibDir = $JavaLibDir | ConvertTo-RemotePath -ComputerName $ComputerName
-    $RemoteJavaBinDir = $JavaBinDir | ConvertTo-RemotePath -ComputerName $ComputerName
-    New-Item -Path $RemoteJavaBinDir -ItemType Directory -Force
-    New-Item -Path $RemoteJavaLibDir -ItemType Directory -Force
+    $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+    Set-JavaHomeEnvironmentVariable
+    $JavaLibDir = Invoke-Command -ScriptBlock {"$env:JAVA_HOME\lib\"}
+    $JavaBinDir = Invoke-Command -ScriptBlock {"$env:JAVA_HOME\bin\"}
+    $RemoteJavaLibDir = $JavaLibDir | ConvertTo-RemotePath
+    $RemoteJavaBinDir = $JavaBinDir | ConvertTo-RemotePath
+    New-Item -Path $RemoteJavaBinDir -ItemType Directory -Force -InformationAction SilentlyContinue
+    New-Item -Path $RemoteJavaLibDir -ItemType Directory -Force -InformationAction SilentlyContinue
     $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\javax.comm.properties"
     $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\win32com.dll"
     Copy-Item -Path $LibFileSource -Destination $RemoteJavaLibDir
     Copy-Item -Path $BinFileSource -Destination $RemoteJavaBinDir
+    $PSDefaultParameterValues.clear()
 }
 
 function Set-TervisUserAsLocalAdministrator {
