@@ -683,8 +683,7 @@ function Invoke-TervisGroupPolicyUpdateForceRestart {
     process{
         $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
         Write-Verbose "Updating Group Policy on $ComputerName"
-        Invoke-GPUpdate -Computer $ComputerName -RandomDelayInMinutes 0 -Force
-        while (Test-IsGPUpdateRunning) {sleep 3}
+        Invoke-Command -ScriptBlock {gpupdate /force}
         Write-Verbose "Waiting on computer restart"
         Restart-Computer -Force -Wait
         $PSDefaultParameterValues.Clear()
