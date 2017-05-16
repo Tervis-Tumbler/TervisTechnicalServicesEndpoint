@@ -678,9 +678,29 @@ function Invoke-TervisGroupPolicyUpdateForceRestart {
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
     process{
+        $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
         Write-Verbose "Updating Group Policy on $ComputerName"
-        Invoke-GPUpdate -Boot -Computer $ComputerName -RandomDelayInMinutes 0 -Force
+        Invoke-GPUpdate -Computer $ComputerName -RandomDelayInMinutes 0 -Force
+        while (Test-IsGPUpdateRunning) {sleep 3}
         Write-Verbose "Waiting on computer restart"
-        Wait-ForNodeRestart @PSBoundParameters
+        Restart-Computer -Force -Wait
+        $PSDefaultParameterValues.Clear()
     }
+}
+
+function Test-IsGPUpdateRunning {
+    param (
+        [Parameter(Mandatory)]$ComputerName
+    )
+    process{
+        if (Get-Process @PSBoundParameters -Name gpupdate -ErrorAction SilentlyContinue){$true} 
+        else {$false}
+    }
+}
+
+function Invoke-ForceLogOffAllUsers {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    Invoke-CimMethod @PSBoundParameters -ClassName Win32_OperatingSystem -MethodName Win32Shutdown -Arguments @{Flags = 4}
 }
