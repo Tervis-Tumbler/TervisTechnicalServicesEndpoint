@@ -704,3 +704,37 @@ function Invoke-ForceLogOffAllUsers {
     )
     Invoke-CimMethod @PSBoundParameters -ClassName Win32_OperatingSystem -MethodName Win32Shutdown -Arguments @{Flags = 4}
 }
+
+function Set-JavaHomeEnvironmentVariable {
+    param (
+        [Parameter(Mandatory)]$ComputerName
+    )
+    process {    
+        $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+        $Java32Path = "C:\Program Files (x86)\Java\"
+        $Java64Path = "C:\Program Files\Java\"
+        $Java32PathRemote = $Java32Path | ConvertTo-RemotePath
+        $Java64PathRemote = $Java64Path | ConvertTo-RemotePath
+        
+        if (Test-Path $Java32PathRemote) {
+            $JavaHomeRoot = $Java32Path
+        } elseif (Test-Path $Java64PathRemote) {
+            $JavaHomeRoot = $Java64Path
+        } else {
+            throw "Cannot find Java install directory on $ComputerName"
+        }
+        
+        $JavaHomeRootRemote = $JavaHomeRoot | ConvertTo-RemotePath
+        $LatestJavaInstall =  Get-ChildItem -Path $JavaHomeRootRemote -ErrorAction Stop | 
+            where Name -like "jre1*" |
+            sort Name |
+            select -Last 1 |
+            select -ExpandProperty Name
+        $JavaHomeDirectory = Join-Path -Path $JavaHomeRoot -ChildPath $LatestJavaInstall
+        Write-Verbose "Setting JAVA_HOME to `"$JavaHomeDirectory`" on $ComputerName"
+        Invoke-Command -ScriptBlock {
+            [Environment]::SetEnvironmentVariable("JAVA_HOME",$Using:JavaHomeDirectory,"Machine")
+        }
+        $PSDefaultParameterValues.Clear()
+    }
+}
