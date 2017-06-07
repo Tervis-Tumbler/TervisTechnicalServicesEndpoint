@@ -709,7 +709,7 @@ function Invoke-ForceLogOffAllUsers {
 
 function Set-JavaHomeEnvironmentVariable {
     param (
-        [Parameter(Mandatory)]$ComputerName
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
     process {    
         $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
