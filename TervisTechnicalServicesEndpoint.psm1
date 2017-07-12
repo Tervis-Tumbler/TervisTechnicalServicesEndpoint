@@ -127,14 +127,15 @@ function Get-TervisEndpointType {
 $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "ContactCenterAgent"
     InstallScript = {
-        Write-Verbose "Starting Contact Center Agent install"
-        Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35 -Force
-        Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse -Force
+        Invoke-Command -ComputerName $ComputerName {
+            Write-Verbose "Starting Contact Center Agent install"
+            Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35 -Force
+            Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse -Force
+        }
     }
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","ContactCenter"
-},
-[PSCustomObject][Ordered]@{
+},[PSCustomObject][Ordered]@{
     Name = "BartenderPrintStationKiosk"
     BaseName = "LabelPrint"
     DefaultOU = "OU=BartenderPCs,OU=IndustryPCs,DC=tervis,DC=prv"
