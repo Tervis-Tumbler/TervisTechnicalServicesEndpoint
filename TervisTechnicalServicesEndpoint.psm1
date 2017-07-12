@@ -67,7 +67,7 @@ function Get-TervisIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
         [Parameter(Mandatory)][String]$ComputerName
@@ -175,6 +175,10 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
             Add-LocalGroupMember -Group Users -Member Privilege_MESAuditorStationUsers
         }
     }
+},
+[PSCustomObject][Ordered]@{
+    Name = "MESStation"
+    DefaultOU = "OU=ProductionFloor,OU=IndustryPCs,DC=tervis,DC=prv"
 }
 
 function New-TervisEndpointCafeKiosk {
