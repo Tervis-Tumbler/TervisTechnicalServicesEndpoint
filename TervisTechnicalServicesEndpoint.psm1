@@ -129,7 +129,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     InstallScript = {
         Write-Verbose "Starting Contact Center Agent install"
         Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35
-        Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse
+        Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse -Force
     }
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","ContactCenter"
