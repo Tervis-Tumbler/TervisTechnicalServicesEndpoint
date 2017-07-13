@@ -180,6 +180,12 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 [PSCustomObject][Ordered]@{
     Name = "MESStation"
     DefaultOU = "OU=ProductionFloor,OU=IndustryPCs,DC=tervis,DC=prv"
+    InstallScript = {
+        Write-Verbose "Restart 1 of 2 for Autologon"
+        Restart-Computer -Wait -Force -ComputerName $ComputerName
+        Write-Verbose "Restart 2 of 2 for Autologon"
+        Restart-Computer -Wait -Force -ComputerName $ComputerName
+    }
 }
 
 function New-TervisEndpointCafeKiosk {
