@@ -584,85 +584,13 @@ function Install-TervisEPSViewer {
     param (
         [Parameter(Mandatory)]$ComputerName
     )
-
-    [Scriptblock]$InstallScript = {    
-        choco install ghostscript.app --version 9.20 -y
-        choco install gimp --version 2.8.20 -y
-
-        # Add environment variable - GS_PROG value: "C:\Program Files\gs\gs9.20\bin\gswin64c.exe"
-        [Environment]::SetEnvironmentVariable( "GS_PROG", '"C:\Program Files\gs\gs9.20\bin\gswin64c.exe"', "Machine")
-        # Copy GS DLL to GIMP Bin
-        Write-Host -ForegroundColor Cyan -BackgroundColor Black "Copying Ghostscript files"
-        Copy-Item -Path "C:\Program Files\gs\gs9.20\bin\gsdll64.dll" -Destination "C:\Program Files\GIMP 2\bin\libgs-8.dll" -Force
-
-        # Associating GIMP with EPS,PS
-        Write-Host -ForegroundColor Cyan -BackgroundColor Black "Writing file associations to registry"
-        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file
-        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell
-        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open
-        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open\command
-        New-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open\command `
-            -Name '(default)' `
-            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.8.exe" "%1"' `
-            -PropertyType String
-            #-Value '"C:\Program Files\gs\gs9.20\bin\gswin64c.exe" -g2000x2000 "%1"' `
-
-        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file
-        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell
-        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open
-        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open\command
-        New-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open\command `
-            -Name '(default)' `
-            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.8.exe" "%1"' `
-            -PropertyType String
-            #-Value '"C:\Program Files\gs\gs9.20\bin\gswin64c.exe" -g2000x2000 "%1"' `
-
-        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file
-        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell
-        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open
-        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open\command
-        New-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open\command `
-            -Name '(default)' `
-            -Value '"C:\Program Files (x86)\Foxit Software\Foxit Reader\FoxitReader.exe" "%1"' `
-            -PropertyType String
-
-        #New-Item -Path HKLM:\SOFTWARE\Classes\.ps
-        New-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\.ps `
-            -Name '(default)' `
-            -Value "ps_auto_file" `
-            -PropertyType String
-        Set-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\.ps `
-            -Name "Content Type" `
-            -Value "application/postscript" `
-            #-PropertyType String
-
-        #New-Item -Path HKLM:\SOFTWARE\Classes\.eps
-        New-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\.eps `
-            -Name '(default)' `
-            -Value "eps_auto_file" `
-            -PropertyType String
-        Set-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\.eps `
-            -Name "Content Type" `
-            -Value "application/postscript" `
-
-        New-ItemProperty `
-            -Path HKLM:\SOFTWARE\Classes\.ai `
-            -Name '(default)' `
-            -Value "ai_auto_file" `
-            -PropertyType String
-
-        choco install foxitreader -y
-    }
-
-    Install-TervisChocolatey -ComputerName $ComputerName -Verbose
-    Invoke-Command -ComputerName $ComputerName -ScriptBlock $InstallScript -Verbose
+    $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+    Install-TervisChocolatey -Verbose
+    Install-TervisChocolateyPackage -PackageName ghostscript.app -Version 9.20
+    Install-TervisChocolateyPackage -PackageName gimp -Version 2.8.20
+    Set-TervisEPSConfiguration
+    Install-TervisChocolateyPackage -PackageName foxitreader
+    $PSDefaultParameterValues.Clear()
 }
 
 function Remove-LocalSecurityPolicyConfiguration {
@@ -749,5 +677,75 @@ function Set-JavaHomeEnvironmentVariable {
             [Environment]::SetEnvironmentVariable("JAVA_HOME",$Using:JavaHomeDirectory,"Machine")
         }
         $PSDefaultParameterValues.Clear()
+    }
+}
+
+function Set-TervisEPSConfiguration {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+        Write-Verbose "Setting Ghostscript environment variable"
+        [Environment]::SetEnvironmentVariable( "GS_PROG", '"C:\Program Files\gs\gs9.20\bin\gswin64c.exe"', "Machine")
+        Write-Verbose "Copying Ghostscript files"
+        Copy-Item -Path "C:\Program Files\gs\gs9.20\bin\gsdll64.dll" -Destination "C:\Program Files\GIMP 2\bin\libgs-8.dll" -Force
+
+        Write-Verbose "Writing file associations to registry"
+        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file
+        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell
+        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open
+        New-Item -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open\command
+        New-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open\command `
+            -Name '(default)' `
+            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.8.exe" "%1"' `
+            -PropertyType String            
+
+        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file
+        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell
+        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open
+        New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open\command
+        New-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open\command `
+            -Name '(default)' `
+            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.8.exe" "%1"' `
+            -PropertyType String
+
+        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file
+        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell
+        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open
+        New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open\command
+        New-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open\command `
+            -Name '(default)' `
+            -Value '"C:\Program Files (x86)\Foxit Software\Foxit Reader\FoxitReader.exe" "%1"' `
+            -PropertyType String
+
+        New-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\.ps `
+            -Name '(default)' `
+            -Value "ps_auto_file" `
+            -PropertyType String
+        Set-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\.ps `
+            -Name "Content Type" `
+            -Value "application/postscript" `
+
+        New-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\.eps `
+            -Name '(default)' `
+            -Value "eps_auto_file" `
+            -PropertyType String
+        Set-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\.eps `
+            -Name "Content Type" `
+            -Value "application/postscript" `
+
+        New-ItemProperty `
+            -Path HKLM:\SOFTWARE\Classes\.ai `
+            -Name '(default)' `
+            -Value "ai_auto_file" `
+            -PropertyType String
     }
 }
