@@ -749,3 +749,23 @@ function Set-TervisEPSConfiguration {
             -PropertyType String
     }
 }
+
+function Remove-AllPhotoshopTemporaryFiles {
+    param (
+        [Parameter(Mandatory)]$ComputerName,
+        [switch]$WhatIf
+    )
+    $RunningProcesses = Get-Process -ComputerName $ComputerName
+    if (
+        ($RunningProcesses -match "Photoshop") -or
+        ($RunningProcesses -match "Illustrator") -or
+        ($RunningProcesses -match "Bridge")        
+    ) {
+        throw "Photoshop, Illustrator, and/or Bridge are still running on $ComputerName"
+    }
+    $UserProfiles = Get-UserProfilesOnComputer -Computer $ComputerName | select -ExpandProperty UserProfileName
+    foreach ($Profile in $UserProfiles) {
+        $PhotoShopTempFiles = Get-ChildItem \\$ComputerName\C$\Users\$Profile\AppData\Local\Temp -Filter "Photoshop Temp*" | 
+            Remove-Item -WhatIf:$WhatIf
+    }
+}
