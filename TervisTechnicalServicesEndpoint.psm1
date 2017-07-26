@@ -67,7 +67,7 @@ function Get-TervisIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
         [Parameter(Mandatory)][String]$ComputerName
@@ -180,6 +180,16 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 [PSCustomObject][Ordered]@{
     Name = "MESStation"
     DefaultOU = "OU=ProductionFloor,OU=IndustryPCs,DC=tervis,DC=prv"
+    InstallScript = {
+        Write-Verbose "Restart 1 of 2 for Autologon"
+        Restart-Computer -Wait -Force -ComputerName $ComputerName
+        Write-Verbose "Restart 2 of 2 for Autologon"
+        Restart-Computer -Wait -Force -ComputerName $ComputerName
+    }
+},
+[PSCustomObject][Ordered]@{
+    Name = "FillRoomSurface"
+    DefaultOU = "OU=FillRoom,OU=IndustryPCs,DC=tervis,DC=prv"
     InstallScript = {
         Write-Verbose "Restart 1 of 2 for Autologon"
         Restart-Computer -Wait -Force -ComputerName $ComputerName
