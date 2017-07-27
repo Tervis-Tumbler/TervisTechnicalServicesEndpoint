@@ -191,6 +191,9 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "FillRoomSurface"
     DefaultOU = "OU=FillRoom,OU=IndustryPCs,DC=tervis,DC=prv"
     InstallScript = {
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
+        }
         Write-Verbose "Restart 1 of 2 for Autologon"
         Restart-Computer -Wait -Force -ComputerName $ComputerName
         Write-Verbose "Restart 2 of 2 for Autologon"
