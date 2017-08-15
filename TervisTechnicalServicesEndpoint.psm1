@@ -779,3 +779,24 @@ function Remove-AllPhotoshopTemporaryFiles {
             Remove-Item -WhatIf:$WhatIf
     }
 }
+
+function Set-TervisSurfaceMESKioskMode {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    begin {
+        $ADDomain = (Get-ADDomain).DNSRoot
+        $AutoLogonSID = (Get-ADUser -Filter {Name -like "Surface*"}).SID.Value
+        $KioskURL = "mesiis.production.$ADDomain"
+    }
+    process {
+        Invoke-Command -ComputerName -ScriptBlock {
+            Enable-WindowsOptionalFeature -FeatureName Client-DeviceLockdown -Online
+            Enable-WindowsOptionalFeature -FeatureName Client-EmbeddedShellLauncher -Online
+            $ShellLauncherClass = [wmiclass]"\\localhost\root\standardcimv2\embedded:WESL_UserSetting"
+            $ShellLauncherClass.SetCustomShell($Using:AutoLogonSID, "c:\program files\internet explorer\iexplore.exe -k $Using:KioskURL", ($null), ($null), 0)
+            $ShellLauncherClass.SetEnabled($TRUE)
+        }
+    }
+}
+
