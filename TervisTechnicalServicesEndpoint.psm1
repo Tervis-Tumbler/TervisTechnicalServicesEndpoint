@@ -805,7 +805,7 @@ function Set-TervisSurfaceMESKioskMode {
     }
     process {
         Write-Verbose "Setting Surface MES Kiosk mode"
-        Invoke-Command -ComputerName -ScriptBlock {
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             Enable-WindowsOptionalFeature -FeatureName Client-DeviceLockdown -Online
             Enable-WindowsOptionalFeature -FeatureName Client-EmbeddedShellLauncher -Online
             $ShellLauncherClass = [wmiclass]"\\localhost\root\standardcimv2\embedded:WESL_UserSetting"
