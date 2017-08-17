@@ -199,7 +199,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 },
 [PSCustomObject][Ordered]@{
     Name = "SurfaceMES"
-    ChocolateyPackageGroupNames = ""
+    ChocolateyPackageGroupNames = "SurfaceMES"
     DefaultOU = "OU=SurfaceMES,OU=IndustryPCs,DC=tervis,DC=prv"
     InstallScript = {
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
