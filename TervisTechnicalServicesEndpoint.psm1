@@ -800,3 +800,31 @@ function Set-TervisSurfaceMESKioskMode {
     }
 }
 
+function Set-TervisAutoHotKeyF2PrintScript {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    begin {
+        $AHKScript = @"
+F2::
+	^p
+Return        
+"@
+        $ScriptsDirectory = "C:\Scripts"
+        $LogonRegistryKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+        $LogonRegistryName = "F2Print"
+        $LogonRegistryValue = "$ScriptsDirectory"
+    }
+    process {
+        $RemoteScriptsDirectory = $ScriptsDirectory | ConvertTo-RemotePath -ComputerName $ComputerName
+        if (-not (Test-Path -Path $RemoteScriptsDirectory)) {
+            New-Item -Path $RemoteScriptsDirectory -ItemType Directory
+        }
+        $AHKScript | Out-File -FilePath $RemoteScriptsDirectory\F2Print.ahk -Encoding utf8
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            if (-not (Get-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -ErrorAction SilentlyContinue)) {
+                New-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
+            }
+        }
+    }
+}
