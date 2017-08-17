@@ -365,12 +365,15 @@ function Set-TervisEndpointPowerPlan {
         powercfg -S $PowerPlanGUID
         $ActivePowerScheme = powercfg /getactivescheme
         $ActivePowerScheme
-        powercfg -change -monitor-timeout-ac 0
-        powercfg -change -standby-timeout-ac 0
-        powercfg -change -hibernate-timeout-ac 0  
-        powercfg -change -monitor-timeout-dc 0
-        powercfg -change -standby-timeout-dc 0
-        powercfg -change -hibernate-timeout-dc 0  
+        
+        if ((Get-ComputerInfo).CsModel -match "Surface") {
+            powercfg -change -monitor-timeout-ac 0
+            powercfg -change -standby-timeout-ac 0
+            powercfg -change -hibernate-timeout-ac 0  
+            powercfg -change -monitor-timeout-dc 0
+            powercfg -change -standby-timeout-dc 0
+            powercfg -change -hibernate-timeout-dc 0
+        }
     }
 
     Write-Verbose $ActivePowerScheme
