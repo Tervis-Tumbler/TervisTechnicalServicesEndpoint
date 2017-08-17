@@ -804,6 +804,7 @@ function Set-TervisSurfaceMESKioskMode {
         $KioskURL = "mesiis.production.$ADDomain"
     }
     process {
+        Write-Verbose "Setting Surface MES Kiosk mode"
         Invoke-Command -ComputerName -ScriptBlock {
             Enable-WindowsOptionalFeature -FeatureName Client-DeviceLockdown -Online
             Enable-WindowsOptionalFeature -FeatureName Client-EmbeddedShellLauncher -Online
@@ -834,7 +835,9 @@ Return
         if (-not (Test-Path -Path $RemoteScriptsDirectory)) {
             New-Item -Path $RemoteScriptsDirectory -ItemType Directory
         }
+        Write-Verbose "Creating F2Print script on $RemoteScriptsDirectory"
         $AHKScript | Out-File -FilePath $RemoteScriptsDirectory\F2Print.ahk -Encoding utf8
+        Write-Verbose "Creating Run F2Print on Logon registry key"
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             if (-not (Get-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -ErrorAction SilentlyContinue)) {                            
                 New-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
