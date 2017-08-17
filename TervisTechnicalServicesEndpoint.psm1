@@ -821,9 +821,13 @@ function Set-TervisAutoHotKeyF2PrintScript {
     )
     begin {
         $AHKScript = @"
-F2::
-	^p
-Return        
+F2:: ;Supports Wasp pen scanners
+	Send,{CTRLDOWN}p{CTRLUP}
+Return
+
+::`$TB:: ;Supports Bluetooth scanners
+	Send,{CTRLDOWN}p{CTRLUP}
+Return       
 "@
         $ScriptsDirectory = "C:\Scripts"
         $LogonRegistryKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
