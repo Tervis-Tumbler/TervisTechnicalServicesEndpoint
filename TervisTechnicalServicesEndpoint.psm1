@@ -836,8 +836,10 @@ Return
         }
         $AHKScript | Out-File -FilePath $RemoteScriptsDirectory\F2Print.ahk -Encoding utf8
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-            if (-not (Get-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -ErrorAction SilentlyContinue)) {
+            if (-not (Get-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -ErrorAction SilentlyContinue)) {                            
                 New-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
+            } else {
+                Set-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
             }
         }
     }
