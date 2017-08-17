@@ -842,7 +842,7 @@ Return
             if (-not (Get-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -ErrorAction SilentlyContinue)) {                            
                 New-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
             } else {
-                Set-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
+                Set-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk"
             }
         }
     }
