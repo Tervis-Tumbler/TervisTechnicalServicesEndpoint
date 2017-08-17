@@ -196,6 +196,18 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Write-Verbose "Restarting for Autologon"
         Restart-Computer -Wait -Force -ComputerName $ComputerName
     }
+},
+[PSCustomObject][Ordered]@{
+    Name = "SurfaceMES"
+    ChocolateyPackageGroupNames = ""
+    DefaultOU = "OU=SurfaceMES,OU=IndustryPCs,DC=tervis,DC=prv"
+    InstallScript = {
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
+        }
+        Write-Verbose "Restarting for Autologon"
+        Restart-Computer -Wait -Force -ComputerName $ComputerName
+    }
 }
 
 function New-TervisEndpointCafeKiosk {
