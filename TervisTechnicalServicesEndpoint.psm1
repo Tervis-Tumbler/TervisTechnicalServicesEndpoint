@@ -819,6 +819,7 @@ function Set-TervisSurfaceMESKioskMode {
             Enable-WindowsOptionalFeature -FeatureName Client-EmbeddedShellLauncher -Online
             $ShellLauncherClass = [wmiclass]"\\localhost\root\standardcimv2\embedded:WESL_UserSetting"
             $ShellLauncherClass.SetCustomShell($Using:AutoLogonSID, "c:\program files\internet explorer\iexplore.exe -k $Using:KioskURL", ($null), ($null), 0)
+            $ShellLauncherClass.SetDefaultShell("explorer.exe",0)
             $ShellLauncherClass.SetEnabled($TRUE)
         }
     }
