@@ -805,12 +805,13 @@ function Remove-AllPhotoshopTemporaryFiles {
 
 function Set-TervisSurfaceMESKioskMode {
     param (
-        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [ValidateSet("Delta","Epsilon","Production")]$MESEnvironment = "Production"
     )
     begin {
         $ADDomain = (Get-ADDomain).DNSRoot
         $AutoLogonSID = (Get-ADUser -Filter {Name -like "Surface*"}).SID.Value
-        $KioskURL = "mesiis.production.$ADDomain"
+        $KioskURL = "mesiis.$MESEnvironment.$ADDomain"
     }
     process {
         Write-Verbose "Setting Surface MES Kiosk mode"
@@ -818,6 +819,7 @@ function Set-TervisSurfaceMESKioskMode {
             Enable-WindowsOptionalFeature -FeatureName Client-DeviceLockdown -Online
             Enable-WindowsOptionalFeature -FeatureName Client-EmbeddedShellLauncher -Online
             $ShellLauncherClass = [wmiclass]"\\localhost\root\standardcimv2\embedded:WESL_UserSetting"
+            $ShellLauncherClass.RemoveCustomShell($Using:AutoLogonSID)
             $ShellLauncherClass.SetCustomShell($Using:AutoLogonSID, "c:\program files\internet explorer\iexplore.exe -k $Using:KioskURL", ($null), ($null), 0)
             $ShellLauncherClass.SetDefaultShell("explorer.exe",0)
             $ShellLauncherClass.SetEnabled($TRUE)
