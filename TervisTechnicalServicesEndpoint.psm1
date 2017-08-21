@@ -874,11 +874,11 @@ function Invoke-PushSurfaceMESSettings {
         Invoke-Command -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
         }
-        Invoke-TervisGroupPolicyUpdateForceRestart 
+        #Invoke-TervisGroupPolicyUpdateForceRestart 
         Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
         Set-TervisAutoHotKeyF2PrintScript
         Set-TervisSurfaceMESKioskMode -MESEnvironment $MESEnvironment
-        Restart-Computer -Wait -Force
+        Restart-Computer -Force #-Wait 
         $PSDefaultParameterValues.Clear()
     }
 }
