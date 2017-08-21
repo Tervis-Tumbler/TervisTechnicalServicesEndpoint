@@ -863,3 +863,22 @@ Return
         }
     }
 }
+
+function Invoke-PushSurfaceMESSettings {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [ValidateSet("Delta","Epsilon","Production")]$MESEnvironment = "Production"
+    )
+    process {
+        $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+        Invoke-Command -ScriptBlock {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
+        }
+        Invoke-TervisGroupPolicyUpdateForceRestart 
+        Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
+        Set-TervisAutoHotKeyF2PrintScript
+        Set-TervisSurfaceMESKioskMode -MESEnvironment $MESEnvironment
+        Restart-Computer -Wait -Force
+        $PSDefaultParameterValues.Clear()
+    }
+}
