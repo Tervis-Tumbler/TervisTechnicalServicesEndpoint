@@ -878,6 +878,7 @@ function Invoke-PushSurfaceMESSettings {
         Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
         Set-TervisAutoHotKeyF2PrintScript
         Set-TervisSurfaceMESKioskMode -MESEnvironment $MESEnvironment
+        Invoke-TervisGroupPolicyUpdateForceRestart
         Restart-Computer -Force #-Wait 
         $PSDefaultParameterValues.Clear()
     }
