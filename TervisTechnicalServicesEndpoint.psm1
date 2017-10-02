@@ -902,9 +902,13 @@ function Move-ADComputerOrUserToSourceOU{
     if ($ADObjectType -eq "User"){
         [string]$Path = Get-ADUser $IdentityOfSourceADObject -Properties distinguishedname,cn | select @{n='ParentContainer';e={$_.distinguishedname -replace '^.+?,(CN|OU.+)','$1'}} | Select -ExpandProperty ParentContainer
         Get-ADUser -Identity $IdentityOfADObjectBeingMoved | Move-ADObject -TargetPath $Path
+        [string]$NewPath = Get-ADComputer $IdentityOfADObjectBeingMoved -Properties distinguishedname,cn | select @{n='ParentContainer';e={$_.distinguishedname -replace '^.+?,(CN|OU.+)','$1'}} | Select -ExpandProperty ParentContainer
+        Write-Host "$IdentityOfADObjectBeingMoved location is now $NewPath"
     } 
     if ($ADObjectType -eq "Computer"){
         [string]$Path = Get-ADComputer $IdentityOfSourceADObject -Properties distinguishedname,cn | select @{n='ParentContainer';e={$_.distinguishedname -replace '^.+?,(CN|OU.+)','$1'}} | Select -ExpandProperty ParentContainer
         Get-ADComputer -Identity $IdentityOfADObjectBeingMoved | Move-ADObject -TargetPath $Path
+        [string]$NewPath = Get-ADComputer $IdentityOfADObjectBeingMoved -Properties distinguishedname,cn | select @{n='ParentContainer';e={$_.distinguishedname -replace '^.+?,(CN|OU.+)','$1'}} | Select -ExpandProperty ParentContainer
+        Write-Host "$IdentityOfADObjectBeingMoved location is now $NewPath"
     }
 }
