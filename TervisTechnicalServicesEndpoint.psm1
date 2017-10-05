@@ -889,3 +889,40 @@ function Invoke-PushSurfaceMESSettings {
         $PSDefaultParameterValues.Clear()
     }
 }
+
+function Install-AdobeReaderOnEndpoint {
+<#
+.DESCRIPTION
+Intended to accept an ADComputer object through the pipeline and attempt to install Adobe Reader. Returns a PSCustomObject result.
+.EXAMPLE
+$Windows10MESStations =  Get-ADComputer -Filter {(OperatingSystem -like "*10*") -and (Name -like "0*")} | ? Enabled -eq $true
+$Result = $null 
+$Windows10MESStations | Install-AdobeReaderOnEndpoint | ? InstallStatus -NE $null | Tee-Object -Variable Result
+#>
+    param (
+        [Parameter(ValueFromPipelineByPropertyName)]$Name
+    )
+    process {
+        #$Name.GetType()
+        if ((Test-NetConnection -ComputerName $Name -CommonTCPPort WINRM).TcpTestSucceeded) {
+            try {
+                Invoke-Command -ComputerName $Name -Scriptblock {
+                    choco install adobereader -y
+                } -ErrorAction Stop | Out-Null
+                $RemoteInstallPath = 'C:\Program Files (x86)\Adobe\Acrobat Reader DC' | ConvertTo-RemotePath -ComputerName $Name
+                if (Test-Path $RemoteInstallPath) {
+                    $InstallStatus = "Successful"
+                } else {throw}
+            } catch {
+                 $InstallStatus = "Failed"
+            }
+        } else {
+            Write-Warning "Could not reach $($Name)"
+            $InstallStatus = "NoConnection"
+        }
+        [PSCustomObject][Ordered]@{
+            ComputerName = $Name
+            InstallStatus = $InstallStatus
+        }
+    }
+}  
