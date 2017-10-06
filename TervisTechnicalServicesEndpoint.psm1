@@ -949,3 +949,15 @@ function Move-ADComputerOrUserToSourceOU{
         Write-Host "$IdentityOfADObjectBeingMoved location is now $NewPath"
     }
 }
+
+function Install-DotNet35OnEndpoint {
+    param (
+        [Parameter(ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35" -Destination "\\$ComputerName\C$\DotNet35" -Recurse -Force
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            Start-DscConfiguration -Wait -Force -Path "C:\DotNet35"
+        }
+    }
+}
