@@ -215,7 +215,10 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "IQ2Welder"
     ChocolateyPackageGroupNames = "IQ2Welder"
     DefaultOU = "OU=IQ Explorer II,OU=Welder Stations,OU=Engineering,OU=Departments,DC=tervis,DC=prv"
-    InstallScript = {}
+    InstallScript = {
+        Install-DotNet35OnEndpoint -ComputerName $ComputerName
+        Write-Warning "Please run IQ II Installer from DisasterRecovery"
+    }
 }
 
 function New-TervisEndpointCafeKiosk {
