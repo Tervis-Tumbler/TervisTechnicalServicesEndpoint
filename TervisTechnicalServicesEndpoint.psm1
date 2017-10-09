@@ -217,6 +217,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     DefaultOU = "OU=IQ Explorer II,OU=Welder Stations,OU=Engineering,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
         Install-DotNet35OnEndpoint -ComputerName $ComputerName
+        New-iQExplorerIIOptionsFile -ComputerName $ComputerName
         Write-Warning "Please run IQ II Installer from DisasterRecovery"
     }
 }
@@ -962,5 +963,40 @@ function Install-DotNet35OnEndpoint {
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             Start-DscConfiguration -Wait -Force -Path "C:\DotNet35"
         }
+    }
+}
+
+function New-iQExplorerIIOptionsFile {
+    param (
+        [Parameter(ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    begin {
+        $RemoteProgramDataRoot = "C:\ProgramData" | ConvertTo-RemotePath -ComputerName $ComputerName
+    }
+    process {
+        $DukaneRoot = New-Item -Path $RemoteProgramDataRoot -Name "Dukane Corporation" -ItemType Directory -Force
+        $FolderAcl = $DukaneRoot | Get-Acl
+        
+        $IdentityReference = "Authenticated Users"
+        $FileSystemRights = [System.Security.AccessControl.FileSystemRights]::Modify
+        $InheritanceFlags = [System.Security.AccessControl.InheritanceFlags]::ObjectInherit,[System.Security.AccessControl.InheritanceFlags]::ContainerInherit
+        $PropagationFlags = [System.Security.AccessControl.PropagationFlags]::None
+        $AccessControlType = [System.Security.AccessControl.AccessControlType]::Allow
+        $FileSystemAccessRule = [System.Security.AccessControl.FileSystemAccessRule]::new($IdentityReference,$FileSystemRights,$InheritanceFlags,$PropagationFlags,$AccessControlType)
+
+        $FolderAcl.AddAccessRule($FileSystemAccessRule)
+        Set-Acl -Path $DukaneRoot -AclObject $FolderAcl
+
+        $iQExplorerIIPath = New-Item -Path $DukaneRoot -Name "iQ Explorer II" -ItemType Directory -Force
+        
+        $OptionsFileString = @"
+<?xml version="1.0" standalone="yes"?>
+<iQOptions_v1_0>
+  <RestrictedIpAddr>
+    <Name>169.254.1.1</Name>
+  </RestrictedIpAddr>
+</iQOptions_v1_0>
+"@
+        $OptionsFileString | Out-File -FilePath "$($iQExplorerIIPath.FullName)\iQOptions.xml" -Encoding utf8 -Force
     }
 }
