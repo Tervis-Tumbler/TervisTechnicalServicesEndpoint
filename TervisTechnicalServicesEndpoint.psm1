@@ -364,7 +364,7 @@ function Set-TervisEndpointPowerPlan {
     param (
         [Parameter(Mandatory)]
         [ValidateSet("High Performance")]
-        [String]$PowerPlanProfile,
+        [String]$PowerPlanProfile = "High Performance",
 
         [Parameter(Mandatory)]
         [String]$ComputerName,
