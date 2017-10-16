@@ -205,6 +205,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
         }        
+        Set-TervisEndpointPowerPlan -ComputerName $ComputerName -NoSleepOnBattery
         Set-TervisAutoHotKeyF2PrintScript -ComputerName $ComputerName
         Set-TervisSurfaceMESKioskMode -ComputerName $ComputerName
         Write-Verbose "Restarting for Autologon"
@@ -366,7 +367,9 @@ function Set-TervisEndpointPowerPlan {
         [Parameter(Mandatory)]
         [String]$ComputerName,
 
-        [pscredential]$Credential = [System.Management.Automation.PSCredential]::Empty
+        [pscredential]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Switch]$NoSleepOnBattery
     )
 
     Write-Verbose "Setting power configuration to $PowerPlanProfile"
@@ -377,10 +380,11 @@ function Set-TervisEndpointPowerPlan {
         $ActivePowerScheme = powercfg /getactivescheme
         $ActivePowerScheme
         
-        if ((Get-ComputerInfo).CsModel -match "Surface") {
-            powercfg -change -monitor-timeout-ac 0
-            powercfg -change -standby-timeout-ac 0
-            powercfg -change -hibernate-timeout-ac 0  
+        powercfg -change -monitor-timeout-ac 0
+        powercfg -change -standby-timeout-ac 0
+        powercfg -change -hibernate-timeout-ac 0
+
+        if ($Using:NoSleepOnBattery) {
             powercfg -change -monitor-timeout-dc 0
             powercfg -change -standby-timeout-dc 0
             powercfg -change -hibernate-timeout-dc 0
