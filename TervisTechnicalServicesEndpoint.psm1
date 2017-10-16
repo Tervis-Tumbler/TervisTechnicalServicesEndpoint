@@ -220,6 +220,8 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Enable-TouchKeyboardOnWindows10Endpoint -ComputerName $ComputerName
         Install-DotNet35OnEndpoint -ComputerName $ComputerName
         New-iQExplorerIIOptionsFile -ComputerName $ComputerName
+        Write-Verbose "Restarting for Autologon"
+        Restart-Computer -Wait -Force -ComputerName $ComputerName
         Write-Warning "Weld tech will install desired iQ II version"
     }
 }
