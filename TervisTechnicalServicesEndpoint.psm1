@@ -216,9 +216,10 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     ChocolateyPackageGroupNames = "IQ2Welder"
     DefaultOU = "OU=IQ Explorer II,OU=Welder Stations,OU=Engineering,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
+        Enable-TouchKeyboardOnWindows10Endpoint -ComputerName $ComputerName
         Install-DotNet35OnEndpoint -ComputerName $ComputerName
         New-iQExplorerIIOptionsFile -ComputerName $ComputerName
-        Write-Warning "Please run IQ II Installer from DisasterRecovery"
+        Write-Warning "Weld tech will install desired iQ II version"
     }
 }
 
@@ -998,5 +999,16 @@ function New-iQExplorerIIOptionsFile {
 </iQOptions_v1_0>
 "@
         $OptionsFileString | Out-File -FilePath "$($iQExplorerIIPath.FullName)\iQOptions.xml" -Encoding utf8 -Force
+    }
+}
+
+function Enable-TouchKeyboardOnWindows10Endpoint {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            New-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\TabletTip\1.7 -Name TipbandDesiredVisibility -PropertyType DWORD -Value 1 -Force
+        }
     }
 }
