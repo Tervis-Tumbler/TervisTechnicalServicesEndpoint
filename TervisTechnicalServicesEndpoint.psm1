@@ -395,7 +395,7 @@ function Set-TervisEndpointPowerPlan {
         }
     }
 
-    Write-Verbose $ActivePowerScheme
+    if ($ActivePowerScheme) {Write-Verbose $ActivePowerScheme}
 }
 
 function New-DotNet35DSCMOF {
