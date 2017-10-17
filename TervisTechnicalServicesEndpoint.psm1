@@ -376,11 +376,13 @@ function Set-TervisEndpointPowerPlan {
 
     Write-Verbose "Setting power configuration to $PowerPlanProfile"
     $ActivePowerScheme = Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
-        $PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$Using:PowerPlanProfile`'").InstanceID
+        <#$PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$Using:PowerPlanProfile`'").InstanceID
+        $Using:PowerPlanProfile
+        $PowerPlanInstanceID.ToString()
         $PowerPlanGUID = $PowerPlanInstanceID.split("{")[1].split("}")[0]
         powercfg -S $PowerPlanGUID
         $ActivePowerScheme = powercfg /getactivescheme
-        $ActivePowerScheme
+        $ActivePowerScheme#>
         
         powercfg -change -monitor-timeout-ac 0
         powercfg -change -standby-timeout-ac 0
