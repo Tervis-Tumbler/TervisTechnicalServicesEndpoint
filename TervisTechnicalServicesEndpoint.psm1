@@ -362,7 +362,6 @@ function Disable-TervisBuiltInAdminAccount {
 
 function Set-TervisEndpointPowerPlan {
     param (
-        [Parameter(Mandatory)]
         [ValidateSet("High Performance")]
         [String]$PowerPlanProfile = "High Performance",
 
