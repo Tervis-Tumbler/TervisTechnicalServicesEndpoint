@@ -86,7 +86,7 @@ function New-TervisEndpoint {
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
     Invoke-TervisGroupPolicyUpdateForceRestart 
-    Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
+    Set-TervisEndpointPowerPlan
     Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
     Remove-KerberosTickets
@@ -362,9 +362,6 @@ function Disable-TervisBuiltInAdminAccount {
 
 function Set-TervisEndpointPowerPlan {
     param (
-        [ValidateSet("High Performance")]
-        [String]$PowerPlanProfile = "High Performance",
-
         [Parameter(Mandatory)]
         [String]$ComputerName,
 
@@ -374,14 +371,15 @@ function Set-TervisEndpointPowerPlan {
     )
 
     Write-Verbose "Setting power configuration to $PowerPlanProfile"
-    $ActivePowerScheme = Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
-        <#$PowerPlanInstanceID = (Get-WmiObject -Class win32_powerplan -Namespace root\cimv2\power -Filter "ElementName=`'$Using:PowerPlanProfile`'").InstanceID
-        $Using:PowerPlanProfile
-        $PowerPlanInstanceID.ToString()
-        $PowerPlanGUID = $PowerPlanInstanceID.split("{")[1].split("}")[0]
-        powercfg -S $PowerPlanGUID
-        $ActivePowerScheme = powercfg /getactivescheme
-        $ActivePowerScheme#>
+    Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
+        $ActivePowerScheme = Get-WmiObject -Namespace root\cimv2\power -Class Win32_PowerPlan | where isActive -eq $true
+        $ActivePowerSchemeGUID = $ActivePowerScheme.InstanceID.Split("{")[1].Split("}")[0]
+        $PowerButtonsAndLidSubGUID = "4f971e89-eebd-4455-a8de-9e59040e7347"
+        $PowerButtonActionSettingGUID = "7648efa3-dd9c-4e3e-b566-50f929386280"
+        $PowerButtonActionShutDown = 3
+        powercfg -setacvalueindex $ActivePowerSchemeGUID $PowerButtonsAndLidSubGUID $PowerButtonActionSettingGUID $PowerButtonActionShutDown
+        powercfg -setdcvalueindex $ActivePowerSchemeGUID $PowerButtonsAndLidSubGUID $PowerButtonActionSettingGUID $PowerButtonActionShutDown
+
         
         powercfg -change -monitor-timeout-ac 0
         powercfg -change -standby-timeout-ac 0
@@ -893,7 +891,7 @@ function Invoke-PushSurfaceMESSettings {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
         }
         #Invoke-TervisGroupPolicyUpdateForceRestart 
-        Set-TervisEndpointPowerPlan -PowerPlanProfile "High Performance"
+        Set-TervisEndpointPowerPlan
         Set-TervisAutoHotKeyF2PrintScript
         Set-TervisSurfaceMESKioskMode -MESEnvironment $MESEnvironment
         Invoke-TervisGroupPolicyUpdateForceRestart
