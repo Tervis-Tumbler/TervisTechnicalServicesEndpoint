@@ -370,7 +370,7 @@ function Set-TervisEndpointPowerPlan {
         [Switch]$NoSleepOnBattery
     )
 
-    Write-Verbose "Setting power configuration to $PowerPlanProfile"
+    Write-Verbose "Setting power configuration"
     Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
         $ActivePowerScheme = Get-WmiObject -Namespace root\cimv2\power -Class Win32_PowerPlan | where isActive -eq $true
         $ActivePowerSchemeGUID = $ActivePowerScheme.InstanceID.Split("{")[1].Split("}")[0]
@@ -379,7 +379,6 @@ function Set-TervisEndpointPowerPlan {
         $PowerButtonActionShutDown = 3
         powercfg -setacvalueindex $ActivePowerSchemeGUID $PowerButtonsAndLidSubGUID $PowerButtonActionSettingGUID $PowerButtonActionShutDown
         powercfg -setdcvalueindex $ActivePowerSchemeGUID $PowerButtonsAndLidSubGUID $PowerButtonActionSettingGUID $PowerButtonActionShutDown
-
         
         powercfg -change -monitor-timeout-ac 0
         powercfg -change -standby-timeout-ac 0
@@ -391,8 +390,6 @@ function Set-TervisEndpointPowerPlan {
             powercfg -change -hibernate-timeout-dc 0
         }
     }
-
-    if ($ActivePowerScheme) {Write-Verbose $ActivePowerScheme}
 }
 
 function New-DotNet35DSCMOF {
