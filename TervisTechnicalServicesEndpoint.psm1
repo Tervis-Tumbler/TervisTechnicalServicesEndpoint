@@ -1014,3 +1014,30 @@ function Enable-TouchKeyboardOnWindows10Endpoint {
         }
     }
 }
+
+function Get-TervisComputersWithDropboxInstalled {
+    $DC0 = ($env:USERDNSDOMAIN).Split(".")[0]
+    $DC1 = ($env:USERDNSDOMAIN).Split(".")[1]
+    $Computers = Get-ADComputer -SearchBase "OU=Departments,DC=$DC0,DC=$DC1" -Filter {Enabled -eq $true}
+    $ItemCount = $Computers.Count
+    $ProgressCounter = 0
+    foreach ($Computer in $Computers) {        
+        $ProgressCounter++
+        Write-Progress -Activity "Scanning Computers" -Status $Computer.Name -PercentComplete ($ProgressCounter*100/$ItemCount)
+        if (Test-Connection -ComputerName $Computer.Name -Quiet) {
+            $HasDropbox = Test-Path -Path "\\$($Computer.Name)\C$\Program Files (x86)\Dropbox"
+            [PSCustomObject][Ordered]@{
+                ComputerName = $Computer.Name
+                HasDropbox = $HasDropbox
+                IsAvailable = $true
+            }
+        } else {            
+            [PSCustomObject][Ordered]@{
+                ComputerName = $Computer.Name
+                HasDropbox = $null
+                IsAvailable = $false
+            }
+        }     
+    }
+}
+
