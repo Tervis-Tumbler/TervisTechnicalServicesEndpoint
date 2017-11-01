@@ -1041,3 +1041,46 @@ function Get-TervisComputersWithDropboxInstalled {
     }
 }
 
+function Invoke-OneDriveNameCorrection {
+    [CmdletBinding()]
+    param (
+        $Path
+    )
+    Write-Verbose "Getting items"
+    $Items = Get-ChildItem -Path $Path -Recurse    
+    
+    Write-Verbose "Checking items"
+    foreach ($Item in $Items) {
+        if ($Item.Name.Substring(0,1) -eq " ") {            
+            $NewName = $Item.Name.Substring(1,$Item.Name.Length - 1)                
+            try {
+                Rename-Item -Path $Item.FullName -NewName $NewName -ErrorAction Stop
+            } catch {
+                Write-Warning "Could not rename item: $($Item.FullName)"
+            }
+            Write-Verbose "Renamed `"$($Item.Name)`" to `"$NewName`""
+        }
+
+        if ((-not($Item.PSIsContainer)) -and ($Item.Extension -eq "")) {
+            Write-Warning "No extension: $($Item.FullName)."
+        }
+
+        if ($Item.Name -match "#") {
+            $NewName = $Item.Name.Replace("#","_")
+            try {
+                Rename-Item -Path $Item.FullName -NewName $NewName -ErrorAction Stop
+            } catch {
+                Write-Warning "Could not rename item: $($Item.FullName)"
+            }
+        }
+        if ($Item.Name -match "%") {
+            $NewName = $Item.Name.Replace("%","_")
+            try {
+                Rename-Item -Path $Item.FullName -NewName $NewName -ErrorAction Stop
+            } catch {
+                Write-Warning "Could not rename item: $($Item.FullName)"
+                $Error
+            }
+        }
+    }
+}
