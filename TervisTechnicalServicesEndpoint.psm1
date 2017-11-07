@@ -87,7 +87,7 @@ function New-TervisEndpoint {
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
     Invoke-TervisGroupPolicyUpdateForceRestart 
     Set-TervisEndpointPowerPlan
-    Sync-ADDomainControllers
+    Get-ADComputer -Identity $ComputerName | Sync-TervisADObjectToAllDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
     Remove-KerberosTickets
     New-TervisLocalAdminAccount
