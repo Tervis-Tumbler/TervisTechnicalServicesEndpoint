@@ -108,15 +108,6 @@ function New-TervisEndpoint {
     }    
 }
 
-Function Sync-ADDomainControllers {
-    [CmdletBinding()]
-    param ()
-    Write-Verbose "Forcing a sync between domain controllers"
-    $DC = Get-ADDomainController | Select -ExpandProperty HostName
-    Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
-    Start-Sleep 30 
-}
-
 function Get-TervisEndpointType {
     param (
         $Name
