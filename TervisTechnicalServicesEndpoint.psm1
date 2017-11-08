@@ -1088,13 +1088,13 @@ function Remove-AutoAdminLogon {
         Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {
             $WinlogonPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
             if (Get-ItemProperty -Path $WinlogonPath -Name AutoAdminLogon -ErrorAction SilentlyContinue) {
-                Remove-ItemProperty -Path $WinlogonPath -Name AutoAdminLogon -WhatIf
+                Remove-ItemProperty -Path $WinlogonPath -Name AutoAdminLogon
             }
             if (Get-ItemProperty -Path $WinlogonPath -Name DefaultUserName -ErrorAction SilentlyContinue) {
-                Remove-ItemProperty -Path $WinlogonPath -Name DefaultUserName -WhatIf
+                Remove-ItemProperty -Path $WinlogonPath -Name DefaultUserName
             }
             if (Get-ItemProperty -Path $WinlogonPath -Name DefaultPassword -ErrorAction SilentlyContinue) {
-                Remove-ItemProperty -Path $WinlogonPath -Name DefaultPassowrd -WhatIf
+                Remove-ItemProperty -Path $WinlogonPath -Name DefaultPassowrd
             }
         }
     }
