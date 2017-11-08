@@ -76,12 +76,12 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting local admin credentials"
     $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 3954
-    Remove-AutoAdminLogon -ComputerName $ComputerName -Credential $LocalAdministratorCredential
+
     if ($MACAddressWithDashes) {
         $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
     }
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
-
+    Remove-AutoAdminLogon -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
@@ -1082,6 +1082,7 @@ function Invoke-OneDriveNameCorrection {
 function Remove-AutoAdminLogon {
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [Parameter(Mandatory)][pscredential]$Credential
     )
     process {
         Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {
