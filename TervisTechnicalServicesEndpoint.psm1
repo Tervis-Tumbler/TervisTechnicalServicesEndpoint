@@ -76,7 +76,7 @@ function New-TervisEndpoint {
 
     Write-Verbose "Getting local admin credentials"
     $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 3954
-
+    Remove-AutoAdminLogon -ComputerName $ComputerName -Credential $LocalAdministratorCredential
     if ($MACAddressWithDashes) {
         $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
     }
@@ -1052,7 +1052,10 @@ function Invoke-OneDriveNameCorrection {
             Write-Verbose "Renamed `"$($Item.Name)`" to `"$NewName`""
         }
 
-        if ((-not($Item.PSIsContainer)) -and ($Item.Extension -eq "")) {
+        if ((-not($Item.PSIsContainer)) -and ($Item.Length -eq 0)) {
+            Write-Warning "0 Byte Length: $($Item.FullName)."
+        }
+        elseif ((-not($Item.PSIsContainer)) -and ($Item.Extension -eq "")) {
             Write-Warning "No extension: $($Item.FullName)."
         }
 
@@ -1071,6 +1074,26 @@ function Invoke-OneDriveNameCorrection {
             } catch {
                 Write-Warning "Could not rename item: $($Item.FullName)"
                 $Error
+            }
+        }
+    }
+}
+
+function Remove-AutoAdminLogon {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+    )
+    process {
+        Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {
+            $WinlogonPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
+            if (Get-ItemProperty -Path $WinlogonPath -Name AutoAdminLogon -ErrorAction SilentlyContinue) {
+                Remove-ItemProperty -Path $WinlogonPath -Name AutoAdminLogon -WhatIf
+            }
+            if (Get-ItemProperty -Path $WinlogonPath -Name DefaultUserName -ErrorAction SilentlyContinue) {
+                Remove-ItemProperty -Path $WinlogonPath -Name DefaultUserName -WhatIf
+            }
+            if (Get-ItemProperty -Path $WinlogonPath -Name DefaultPassword -ErrorAction SilentlyContinue) {
+                Remove-ItemProperty -Path $WinlogonPath -Name DefaultPassowrd -WhatIf
             }
         }
     }
