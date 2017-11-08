@@ -87,7 +87,7 @@ function New-TervisEndpoint {
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
     Invoke-TervisGroupPolicyUpdateForceRestart 
     Set-TervisEndpointPowerPlan
-    Get-ADComputer -Identity $ComputerName | Sync-TervisADObjectToAllDomainControllers
+    Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
     Remove-KerberosTickets
     New-TervisLocalAdminAccount
@@ -106,6 +106,15 @@ function New-TervisEndpoint {
         Write-Verbose "Starting Cafe Kiosk install"
         New-TervisEndpointCafeKiosk -EndpointName $ComputerName 
     }    
+}
+
+Function Sync-ADDomainControllers {
+    [CmdletBinding()]
+    param ()
+    Write-Verbose "Forcing a sync between domain controllers"
+    $DC = Get-ADDomainController | Select -ExpandProperty HostName
+    Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
+    Start-Sleep 30 
 }
 
 function Get-TervisEndpointType {
@@ -1094,7 +1103,7 @@ function Remove-AutoAdminLogon {
                 Remove-ItemProperty -Path $WinlogonPath -Name DefaultUserName
             }
             if (Get-ItemProperty -Path $WinlogonPath -Name DefaultPassword -ErrorAction SilentlyContinue) {
-                Remove-ItemProperty -Path $WinlogonPath -Name DefaultPassowrd
+                Remove-ItemProperty -Path $WinlogonPath -Name DefaultPassword
             }
         }
     }
