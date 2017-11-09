@@ -81,7 +81,6 @@ function New-TervisEndpoint {
         $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
     }
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
-    Remove-AutoAdminLogon -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
