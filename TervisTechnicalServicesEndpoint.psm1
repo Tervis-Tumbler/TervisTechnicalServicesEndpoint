@@ -75,7 +75,7 @@ function New-TervisEndpoint {
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
 
     Write-Verbose "Getting local admin credentials"
-    $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 3954
+    $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 14
 
     if ($MACAddressWithDashes) {
         $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
@@ -89,10 +89,8 @@ function New-TervisEndpoint {
     Set-TervisEndpointPowerPlan
     Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
-    Remove-KerberosTickets
-    New-TervisLocalAdminAccount
+    Remove-KerberosTickets   
     Set-TervisBuiltInAdminAccountPassword
-    Disable-TervisBuiltInAdminAccount
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
     Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $ComputerName)
