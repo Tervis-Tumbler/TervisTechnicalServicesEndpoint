@@ -81,9 +81,11 @@ function New-TervisEndpoint {
         $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
     }
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
+    Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+    Disable-WMIOnEndpointPublicProfile
     Invoke-TervisGroupPolicyUpdateForceRestart 
     Set-TervisEndpointPowerPlan
     Sync-ADDomainControllers
@@ -1102,6 +1104,32 @@ function Remove-AutoAdminLogon {
             if (Get-ItemProperty -Path $WinlogonPath -Name DefaultPassword -ErrorAction SilentlyContinue) {
                 Remove-ItemProperty -Path $WinlogonPath -Name DefaultPassword
             }
+        }
+    }
+}
+
+function Enable-WMIOnEndpoint {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [Parameter(Mandatory)][pscredential]$Credential
+    )
+    process {
+        Write-Verbose "Enabling WMI firewall rule on all profiles"
+        Invoke-Command @PSBoundParameters -ScriptBlock {
+            Enable-NetFirewallRule -Name WMI-WINMGMT-In-TCP-NoScope
+            Enable-NetFirewallRule -Name WMI-WINMGMT-In-TCP
+        }
+    }
+}
+
+function Disable-WMIOnEndpointPublicProfile {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        Write-Verbose "Disabling WMI firewall rule on Public and Private profiles"
+        Invoke-Command @PSBoundParameters -ScriptBlock {
+            Disable-NetFirewallRule -Name WMI-WINMGMT-In-TCP
         }
     }
 }
