@@ -126,11 +126,7 @@ function Get-TervisEndpointType {
 $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "ContactCenterAgent"
     InstallScript = {
-        Invoke-Command -ComputerName $ComputerName {
-            Write-Verbose "Starting Contact Center Agent install"
-            Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35 -Force
-            Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse -Force
-        }
+        Install-FedExCustomerTools -ComputerName $ComputerName
     }
     DefaultOU = "OU=Computers,OU=Sales,OU=Departments,DC=tervis,DC=prv"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint","ContactCenter"
@@ -1131,5 +1127,18 @@ function Disable-WMIOnEndpointPublicProfile {
         Invoke-Command @PSBoundParameters -ScriptBlock {
             Disable-NetFirewallRule -Name WMI-WINMGMT-In-TCP
         }
+    }
+}
+
+function Install-FedExCustomerTools {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]$ComputerName
+    )
+    Write-Verbose "Installing FedEx Customer Tools"
+    Invoke-Command -ComputerName $ComputerName {
+        Write-Verbose "Starting Contact Center Agent install"
+        Start-DscConfiguration -Wait -Path \\$env:USERDNSDOMAIN\applications\PowerShell\DotNet35 -Force
+        Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse -Force
     }
 }
