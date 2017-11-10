@@ -1111,7 +1111,7 @@ function Remove-AutoAdminLogon {
 function Enable-WMIOnEndpoint {
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
-        [Parameter(Mandatory)][pscredential]$Credential
+        [pscredential]$Credential = [pscredential]::Empty
     )
     process {
         Write-Verbose "Enabling WMI firewall rule on all profiles"
