@@ -1142,3 +1142,17 @@ function Install-FedExCustomerTools {
         Copy-Item -Path "\\$env:USERDNSDOMAIN\applications\PowerShell\FedEx Customer Tools" -Destination "c:\programdata\" -Recurse -Force
     }
 }
+
+function Test-WinRMFromMacAddress {
+    param (
+        $MacAddressWithDashes
+    )
+
+    $IP = Get-TervisIPAddressAsString -MACAddressWithDashes $MacAddressWithDashes
+    $ConResult = Test-NetConnection -ComputerName $IP -CommonTCPPort WINRM
+    [PSCustomObject]@{
+        MAC = $MacAddressWithDashes
+        IP = $IP
+        WinRMIsUp = $ConResult.TcpTestSucceeded
+    }
+}
