@@ -1167,13 +1167,17 @@ function Install-TervisOffice2016VLPush {
     }
     process {
         $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+        Write-Verbose "Creating C:\ChocoPackages on $ComputerName"
         try {
             New-Item -Path (Split-Path -Path $DestinationRemote -Parent) -ItemType Directory -Force -ErrorAction Stop
         } catch {
             throw "Couldn't connect to $ComputerName"
         }
+        Write-Verbose "Pushing Office 2016 VL choco package to $ComputerName"
         Copy-Item -Path $Source -Destination $DestinationRemote
+        Write-Verbose "Installing Chocolatey"
         Install-TervisChocolatey -ComputerName $ComputerName
+        Write-Verbose "Installing Office 2016 VL"
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             choco install chocolatey-uninstall.extension -y
             choco install $Using:DestinationLocal -y
