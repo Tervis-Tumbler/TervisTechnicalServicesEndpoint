@@ -1156,3 +1156,27 @@ function Test-WinRMFromMacAddress {
         WinRMIsUp = $ConResult.TcpTestSucceeded
     }
 }
+
+function Install-TervisOffice2016VLPush {
+    param (
+        $ComputerName 
+    )
+    begin {
+        $Source = "\\$env:USERDNSDOMAIN\applications\chocolatey\Office2016VL.16.0.4266.1001.nupkg"
+        $DestinationLocal = "C:\ChocoPackages\Office2016VL.16.0.4266.1001.nupkg"
+    }
+    process {
+        $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+        try {
+            New-Item -Path (Split-Path -Path $DestinationRemote -Parent) -ItemType Directory -Force -ErrorAction Stop
+        } catch {
+            throw "Couldn't connect to $ComputerName"
+        }
+        Copy-Item -Path $Source -Destination $DestinationRemote
+        Install-TervisChocolatey -ComputerName $ComputerName
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            choco install chocolatey-uninstall.extension -y
+            choco install $Using:DestinationLocal -y
+        }
+    }
+}
