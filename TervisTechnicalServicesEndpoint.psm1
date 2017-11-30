@@ -154,7 +154,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Write-Verbose "Starting Expeditor install"
         Install-WCSScaleSupport -ComputerName $ComputerName
     }
-    ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
+    ChocolateyPackageGroupNames = "ShipStation"
 },
 [PSCustomObject][Ordered]@{
     Name = "IT"
