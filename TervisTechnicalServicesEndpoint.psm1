@@ -418,8 +418,8 @@ function Install-WCSScaleSupport {
     $RemoteJavaBinDir = $JavaBinDir | ConvertTo-RemotePath
     New-Item -Path $RemoteJavaBinDir -ItemType Directory -Force | Out-Null
     New-Item -Path $RemoteJavaLibDir -ItemType Directory -Force | Out-Null
-    $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\javax.comm.properties"
-    $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependancies\win32com.dll"
+    $LibFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependencies\lib\javax.comm.properties"
+    $BinFileSource = "\\fs1\DisasterRecovery\Programs\WCS\Scale Dependencies\bin\win32com.dll"
     Copy-Item -Path $LibFileSource -Destination $RemoteJavaLibDir
     Copy-Item -Path $BinFileSource -Destination $RemoteJavaBinDir
     $PSDefaultParameterValues.clear()
