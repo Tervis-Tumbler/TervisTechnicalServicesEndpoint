@@ -153,6 +153,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     InstallScript = {
         Write-Verbose "Starting Expeditor install"
         Install-WCSScaleSupport -ComputerName $ComputerName
+        Install-TervisBartenderDesigner -ComputerName $ComputerName -Version 10
     }
     ChocolateyPackageGroupNames = "ShipStation"
 },
