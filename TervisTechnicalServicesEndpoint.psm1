@@ -1185,3 +1185,14 @@ function Install-TervisOffice2016VLPush {
         }
     }
 }
+
+function Invoke-SetWindows7UserAccountForOneDrive {
+    Param(
+        [parameter(Mandatory)]$Username
+    )
+    $UserObject = Get-ADUser -Identity $Username -Properties HomeDirectory
+    if ($UserObject.HomeDirectory){
+        Set-ADUser -Identity $Username -Clear HomeDirectory
+    }
+    Get-ADGroup -Identity "Privilege_OneDriveWindows7_Apply" | Add-ADGroupMember -Members $Username
+}
