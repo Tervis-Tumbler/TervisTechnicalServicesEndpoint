@@ -1163,26 +1163,29 @@ function Install-TervisOffice2016VLPush {
     param (
         $ComputerName 
     )
-    begin {
+    begin {        
         $Source = "\\$env:USERDNSDOMAIN\applications\chocolatey\Office2016VL.16.0.4266.1001.nupkg"
-        $DestinationLocal = "C:\ChocoPackages\Office2016VL.16.0.4266.1001.nupkg"
+        $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
     }
     process {
-        $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName
-        Write-Verbose "Creating C:\ChocoPackages on $ComputerName"
-        try {
-            New-Item -Path (Split-Path -Path $DestinationRemote -Parent) -ItemType Directory -Force -ErrorAction Stop
-        } catch {
-            throw "Couldn't connect to $ComputerName"
-        }
-        Write-Verbose "Pushing Office 2016 VL choco package to $ComputerName"
-        Copy-Item -Path $Source -Destination $DestinationRemote
-        Write-Verbose "Installing Chocolatey"
-        Install-TervisChocolatey -ComputerName $ComputerName
-        Write-Verbose "Installing Office 2016 VL"
-        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-            choco install chocolatey-uninstall.extension -y
-            choco install $Using:DestinationLocal -y
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
+            $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName            
+            $PackageDirectoryRemote = Split-Path -Path $DestinationRemote -Parent
+
+            if (-not (Test-Path -Path $PackageDirectoryRemote)) {
+                New-Item -Path $PackageDirectoryRemote -ItemType Directory -ErrorAction Stop
+            }
+
+            if (-not (Test-Path -Path $DestinationRemote)) {
+                Copy-Item -Path $Source -Destination $DestinationRemote
+            }
+            
+            Install-TervisChocolatey -ComputerName $ComputerName
+            
+            Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+                choco install chocolatey-uninstall.extension -y
+                choco install $Using:DestinationLocal -y
+            }
         }
     }
 }
