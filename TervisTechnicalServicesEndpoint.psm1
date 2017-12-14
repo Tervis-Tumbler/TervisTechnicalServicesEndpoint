@@ -1,5 +1,5 @@
 ﻿#Requires -version 5.0
-#Requires -modules PasswordstatePowershell, TervisChocolatey, TervisNetTCPIP, TervisApplication
+#Requires -modules TervisPasswordstatePowershell, TervisChocolatey, TervisNetTCPIP, TervisApplication
 #Requires -RunAsAdministrator
 
 function Enter-PSSessionToNewEndpoint {
@@ -1178,26 +1178,29 @@ function Install-TervisOffice2016VLPush {
     param (
         $ComputerName 
     )
-    begin {
+    begin {        
         $Source = "\\$env:USERDNSDOMAIN\applications\chocolatey\Office2016VL.16.0.4266.1001.nupkg"
-        $DestinationLocal = "C:\ChocoPackages\Office2016VL.16.0.4266.1001.nupkg"
+        $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
     }
     process {
-        $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName
-        Write-Verbose "Creating C:\ChocoPackages on $ComputerName"
-        try {
-            New-Item -Path (Split-Path -Path $DestinationRemote -Parent) -ItemType Directory -Force -ErrorAction Stop
-        } catch {
-            throw "Couldn't connect to $ComputerName"
-        }
-        Write-Verbose "Pushing Office 2016 VL choco package to $ComputerName"
-        Copy-Item -Path $Source -Destination $DestinationRemote
-        Write-Verbose "Installing Chocolatey"
-        Install-TervisChocolatey -ComputerName $ComputerName
-        Write-Verbose "Installing Office 2016 VL"
-        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-            choco install chocolatey-uninstall.extension -y
-            choco install $Using:DestinationLocal -y
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
+            $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName            
+            $PackageDirectoryRemote = Split-Path -Path $DestinationRemote -Parent
+
+            if (-not (Test-Path -Path $PackageDirectoryRemote)) {
+                New-Item -Path $PackageDirectoryRemote -ItemType Directory -ErrorAction Stop
+            }
+
+            if (-not (Test-Path -Path $DestinationRemote)) {
+                Copy-Item -Path $Source -Destination $DestinationRemote
+            }
+            
+            Install-TervisChocolatey -ComputerName $ComputerName
+            
+            Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+                choco install chocolatey-uninstall.extension -y
+                choco install $Using:DestinationLocal -y
+            }
         }
     }
 }
@@ -1240,14 +1243,17 @@ function Invoke-PushCiscoJabberLogonScript {
         }
     }
 }
-<#
-    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-        if(-not (Test-Path "$using:ScriptPathRoot\$using:ScriptFolderName" -PathType Container)){
-            New-Item -Path $using:ScriptPathRoot -Name "Tervis" -ItemType Directory
-        }
-        $using:ExplorerQuickAccessScript | Out-File "$using:ScriptPathRoot\$using:ScriptFolderName\ExplorerQuickAccess.ps1" -Force
-        & REG LOAD HKU\TEMP C:\Users\Default\NTUSER.DAT
-        New-ItemProperty -Path "Registry::HKEY_USERS\TEMP\Software\Microsoft\Windows\CurrentVersion\RunOnce" -Name ExplorerFavorites -Value "powershell.exe -noprofile -file $using:ScriptPathRoot\$using:ScriptFolderName\ExplorerQuickAccess.ps1" -PropertyType String -Force
-        & reg unload HKU\TEMP
+
+function Invoke-SetWindows7FolderRedirectionRevertApply {
+    Param(
+        [parameter(Mandatory)]$Username
+    )
+    $UserObject = Get-ADUser -Identity $Username -Properties HomeDirectory
+    if ($UserObject.HomeDirectory){
+        Set-ADUser -Identity $Username -Clear HomeDirectory
     }
-#>
+    Get-ADGroup -Identity "Privilege_FolderRedirectionWin7Revert_Apply" | Add-ADGroupMember -Members $Username
+    Get-ADGroup -Identity "Privilege_OneDriveGroupPolicyExemption" | Add-ADGroupMember -Members $Username
+    
+}
+
