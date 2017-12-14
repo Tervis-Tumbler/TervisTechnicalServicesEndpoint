@@ -1256,4 +1256,3 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
     Get-ADGroup -Identity "Privilege_OneDriveGroupPolicyExemption" | Add-ADGroupMember -Members $Username
     
 }
-
