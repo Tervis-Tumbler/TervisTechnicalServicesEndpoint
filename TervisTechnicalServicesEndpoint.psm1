@@ -82,6 +82,7 @@ function New-TervisEndpoint {
     }
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
     Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
+    Enable-SmbDomainProfileFirewallRuleOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
@@ -1132,6 +1133,20 @@ function Disable-WMIOnEndpointPublicProfile {
     }
 }
 
+function Enable-SmbDomainProfileFirewallRuleOnEndpoint {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [pscredential]$Credential = [pscredential]::Empty
+    )
+    process {
+        Write-Verbose "Enabling SMB firewall rule on domain profiles"
+        Invoke-Command @PSBoundParameters -ScriptBlock {
+            Enable-NetFirewallRule -Name FPS-SMB-In-TCP-NoScope
+            Enable-NetFirewallRule -Name FPS-SMB-Out-TCP-NoScope
+        }
+    }
+}
+
 function Install-FedExCustomerTools {
     [CmdletBinding()]
     param (
@@ -1197,3 +1212,42 @@ function Invoke-SetWindows7UserAccountForOneDrive {
     }
     Get-ADGroup -Identity "Privilege_OneDriveWindows7_Apply" | Add-ADGroupMember -Members $Username
 }
+
+function Invoke-PushCiscoJabberLogonScript {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    begin {
+        $ScriptSource = "$PSScriptRoot\Scripts\Set-TervisJabberUserSettings.ps1"
+        if (-not (test-path $ScriptSource)){
+            throw "Source script could not be found"
+        }
+        $ScriptDestinationLocal = "$env:ProgramData\Tervis"
+    }
+    process {
+        $ScriptDestinationRemote = $ScriptDestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+        New-Item -Path $ScriptDestinationRemote -ItemType directory -Force
+        Copy-Item -Path $ScriptSource -Destination $ScriptDestinationRemote -Force
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            & REG LOAD HKU\TEMP C:\Users\Default\NTUSER.DAT
+            New-ItemProperty `
+                -Path "Registry::HKEY_USERS\TEMP\Software\Microsoft\Windows\CurrentVersion\Run" `
+                -Name Set-TervisJabberUserSettings `
+                -Value "powershell.exe -noprofile -file $using:ScriptDestinationLocal\Set-TervisJabberUserSettings.ps1" `
+                -PropertyType String `
+                -Force
+            & REG UNLOAD HKU\TEMP
+        }
+    }
+}
+<#
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+        if(-not (Test-Path "$using:ScriptPathRoot\$using:ScriptFolderName" -PathType Container)){
+            New-Item -Path $using:ScriptPathRoot -Name "Tervis" -ItemType Directory
+        }
+        $using:ExplorerQuickAccessScript | Out-File "$using:ScriptPathRoot\$using:ScriptFolderName\ExplorerQuickAccess.ps1" -Force
+        & REG LOAD HKU\TEMP C:\Users\Default\NTUSER.DAT
+        New-ItemProperty -Path "Registry::HKEY_USERS\TEMP\Software\Microsoft\Windows\CurrentVersion\RunOnce" -Name ExplorerFavorites -Value "powershell.exe -noprofile -file $using:ScriptPathRoot\$using:ScriptFolderName\ExplorerQuickAccess.ps1" -PropertyType String -Force
+        & reg unload HKU\TEMP
+    }
+#>
