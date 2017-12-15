@@ -82,6 +82,7 @@ function New-TervisEndpoint {
     }
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
     Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
+    Enable-SmbDomainProfileFirewallRuleOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
@@ -95,6 +96,7 @@ function New-TervisEndpoint {
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
     Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $ComputerName)
+    Invoke-PushCiscoJabberLogonScript
     Invoke-PushTervisExplorerFavoritesOrQuickAccessToNewEndpoint    
     $PSDefaultParameterValues.clear()
 
@@ -1132,6 +1134,20 @@ function Disable-WMIOnEndpointPublicProfile {
     }
 }
 
+function Enable-SmbDomainProfileFirewallRuleOnEndpoint {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [pscredential]$Credential = [pscredential]::Empty
+    )
+    process {
+        Write-Verbose "Enabling SMB firewall rule on domain profiles"
+        Invoke-Command @PSBoundParameters -ScriptBlock {
+            Enable-NetFirewallRule -Name FPS-SMB-In-TCP-NoScope
+            Enable-NetFirewallRule -Name FPS-SMB-Out-TCP-NoScope
+        }
+    }
+}
+
 function Install-FedExCustomerTools {
     [CmdletBinding()]
     param (
@@ -1215,6 +1231,36 @@ function Invoke-SetWindows7UserAccountForOneDrive {
         Set-ADUser -Identity $Username -Clear HomeDirectory
     }
     Get-ADGroup -Identity "Privilege_OneDriveWindows7_Apply" | Add-ADGroupMember -Members $Username
+}
+
+function Invoke-PushCiscoJabberLogonScript {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    begin {
+        $ScriptSource = "$PSScriptRoot\Scripts\Set-TervisJabberUserSettings.ps1"
+        if (-not (test-path $ScriptSource)){
+            throw "Source script could not be found"
+        }
+        $ScriptDestinationLocal = "$env:ProgramData\Tervis"
+    }
+    process {
+        Write-Verbose "Copying Cisco Jabber Logon Script to $ComputerName"
+        $ScriptDestinationRemote = $ScriptDestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+        New-Item -Path $ScriptDestinationRemote -ItemType directory -Force
+        Copy-Item -Path $ScriptSource -Destination $ScriptDestinationRemote -Force
+        Write-Verbose "Setting Run registry key"
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            & REG LOAD HKU\TEMP C:\Users\Default\NTUSER.DAT
+            New-ItemProperty `
+                -Path "Registry::HKEY_USERS\TEMP\Software\Microsoft\Windows\CurrentVersion\Run" `
+                -Name Set-TervisJabberUserSettings `
+                -Value "powershell.exe -noprofile -executionpolicy bypass -windowstyle hidden -file $using:ScriptDestinationLocal\Set-TervisJabberUserSettings.ps1" `
+                -PropertyType String `
+                -Force
+            & REG UNLOAD HKU\TEMP
+        }
+    }
 }
 
 function Invoke-SetWindows7FolderRedirectionRevertApply {
