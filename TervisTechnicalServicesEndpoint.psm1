@@ -1235,12 +1235,14 @@ function Invoke-PushCiscoJabberLogonScript {
         Copy-Item -Path $ScriptSource -Destination $ScriptDestinationRemote -Force
         Write-Verbose "Setting Run registry key"
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            & REG LOAD HKU\TEMP C:\Users\Default\NTUSER.DAT
             New-ItemProperty `
-                -Path "Registry::HKEY_USERS\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Run" `
+                -Path "Registry::HKEY_USERS\TEMP\Software\Microsoft\Windows\CurrentVersion\Run" `
                 -Name Set-TervisJabberUserSettings `
                 -Value "powershell.exe -noprofile -executionpolicy bypass -windowstyle hidden -file $using:ScriptDestinationLocal\Set-TervisJabberUserSettings.ps1" `
                 -PropertyType String `
                 -Force
+            & REG UNLOAD HKU\TEMP
         }
     }
 }
