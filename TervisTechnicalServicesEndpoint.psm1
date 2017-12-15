@@ -1286,11 +1286,11 @@ function Restart-TervisComputer {
         [int]$SecondsTillRestart = $DateTimeOfRestart - (Get-Date) | Select-Object -ExpandProperty TotalSeconds
     }
     process {
-        $Command = "shutdown -m \\$ComputerName -t $SecondsTillRestart -r -f"
+        $Arguments = "-m \\$ComputerName -t $SecondsTillRestart -r -f"
         if ($Message) {
-            $Command += " -c $Message"
+            $Arguments += " -c $Message"
         }
 
-        & $Command
+        & shutdown.exe $Arguments
     }
 }
