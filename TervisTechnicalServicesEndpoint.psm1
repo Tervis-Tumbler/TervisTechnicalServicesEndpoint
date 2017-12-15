@@ -1163,7 +1163,25 @@ function Install-TervisOffice2016VLPush {
     param (
         $ComputerName 
     )
-    begin {        
+    process {
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {            
+            Install-TervisChocolatey -ComputerName $ComputerName
+            
+            $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
+
+            Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+                choco install chocolatey-uninstall.extension -y
+                choco install $Using:DestinationLocal -y
+            }
+        }
+    }
+}
+
+function Copy-Office2016VLPackage {
+    param (
+        $ComputerName 
+    )
+    begin {
         $Source = "\\$env:USERDNSDOMAIN\applications\chocolatey\Office2016VL.16.0.4266.1001.nupkg"
         $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
     }
@@ -1177,16 +1195,14 @@ function Install-TervisOffice2016VLPush {
             }
 
             if (-not (Test-Path -Path $DestinationRemote)) {
-                Copy-Item -Path $Source -Destination $DestinationRemote
-            }
-            
-            Install-TervisChocolatey -ComputerName $ComputerName
-            
-            Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-                choco install chocolatey-uninstall.extension -y
-                choco install $Using:DestinationLocal -y
+                Start-BitsTransfer -Asynchronous -Source $Source -Destination $DestinationRemote
             }
         }
+    }
+    end {
+        do {
+            Get-BitsTransfer
+        } while (Get-BitsTransfer)
     }
 }
 
