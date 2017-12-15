@@ -1279,7 +1279,7 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
 function Restart-TervisComputer {
     param (
         [Parameter(Mandatory)]$DateTimeOfRestart,
-        [Parameter(Mandatory)]$ComputerName,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
         $Message
     )
     begin {
@@ -1290,6 +1290,17 @@ function Restart-TervisComputer {
         if ($Message) {
             $Arguments += "/c", "$Message"
         }
+
+        & shutdown.exe $Arguments
+    }
+}
+
+function Stop-TervisComputerRestart {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        $Arguments = "/m", "\\$ComputerName", "/a"
 
         & shutdown.exe $Arguments
     }
