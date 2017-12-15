@@ -1286,9 +1286,9 @@ function Restart-TervisComputer {
         [int]$SecondsTillRestart = $DateTimeOfRestart - (Get-Date) | Select-Object -ExpandProperty TotalSeconds
     }
     process {
-        $Arguments = "-m \\$ComputerName -t $SecondsTillRestart -r -f"
+        $Arguments = "/m", "\\$ComputerName", "/t", "$SecondsTillRestart", "/r", "/f"
         if ($Message) {
-            $Arguments += " -c $Message"
+            $Arguments += "/c", "$Message"
         }
 
         & shutdown.exe $Arguments
