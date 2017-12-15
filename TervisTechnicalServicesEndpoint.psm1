@@ -1275,3 +1275,22 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
     Get-ADGroup -Identity "Privilege_OneDriveGroupPolicyExemption" | Add-ADGroupMember -Members $Username
     
 }
+
+function Restart-TervisComputer {
+    param (
+        [Parameter(Mandatory)]$DateTimeOfRestart,
+        [Parameter(Mandatory)]$ComputerName,
+        $Message
+    )
+    begin {
+        [int]$SecondsTillRestart = $DateTimeOfRestart - (Get-Date) | Select-Object -ExpandProperty TotalSeconds
+    }
+    process {
+        $Command = "shutdown -m \\$ComputerName -t $SecondsTillRestart -r -f"
+        if ($Message) {
+            $Command += " -c $Message"
+        }
+
+        & $Command
+    }
+}
