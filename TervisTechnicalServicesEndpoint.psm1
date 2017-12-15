@@ -1276,9 +1276,33 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
     
 }
 
+function Restart-TervisComputerIfNotRebootedSince {
+    param (
+        [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
+        [DateTime]$HaventRebootedSinceDate,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        $Message
+    )
+    process {
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
+            if ($HaventRebootedSinceDate) {
+                $Uptime = Get-Uptime -ComputerName $ComputerName
+                $DateLastRebooted = (Get-Date) - $Uptime
+                if ($HaventRebootedSinceDate -gt $DateLastRebooted) {
+                    if ($Message) {
+                        Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName -Message $Message
+                    } else {
+                        Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName
+                    }
+                }
+            }
+        }
+    }
+}
+
 function Restart-TervisComputer {
     param (
-        [Parameter(Mandatory)]$DateTimeOfRestart,
+        [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
         $Message
     )
