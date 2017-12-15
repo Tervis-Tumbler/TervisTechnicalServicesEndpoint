@@ -1279,21 +1279,19 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
 function Restart-TervisComputerIfNotRebootedSinceDateTime {
     param (
         [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
-        [DateTime]$HaventRebootedSinceDate,
+        [Parameter(Mandatory)][DateTime]$HaventRebootedSinceDate,
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
         $Message
     )
     process {
         if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
-            if ($HaventRebootedSinceDate) {
-                $Uptime = Get-Uptime -ComputerName $ComputerName
-                $DateLastRebooted = (Get-Date) - $Uptime
-                if ($HaventRebootedSinceDate -gt $DateLastRebooted) {
-                    if ($Message) {
-                        Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName -Message $Message
-                    } else {
-                        Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName
-                    }
+            $Uptime = Get-Uptime -ComputerName $ComputerName
+            $DateLastRebooted = (Get-Date) - $Uptime
+            if ($HaventRebootedSinceDate -gt $DateLastRebooted) {
+                if ($Message) {
+                    Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName -Message $Message
+                } else {
+                    Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName
                 }
             }
         }
