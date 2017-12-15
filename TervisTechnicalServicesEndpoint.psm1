@@ -1276,7 +1276,7 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
     
 }
 
-function Restart-TervisComputerIfNotRebootedSince {
+function Restart-TervisComputerIfNotRebootedSinceDateTime {
     param (
         [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
         [DateTime]$HaventRebootedSinceDate,
