@@ -110,15 +110,6 @@ function New-TervisEndpoint {
     }    
 }
 
-Function Sync-ADDomainControllers {
-    [CmdletBinding()]
-    param ()
-    Write-Verbose "Forcing a sync between domain controllers"
-    $DC = Get-ADDomainController | Select -ExpandProperty HostName
-    Invoke-Command -ComputerName $DC -ScriptBlock {repadmin /syncall}
-    Start-Sleep 30 
-}
-
 function Get-TervisEndpointType {
     param (
         $Name
@@ -1179,7 +1170,25 @@ function Install-TervisOffice2016VLPush {
     param (
         $ComputerName 
     )
-    begin {        
+    process {
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {            
+            Install-TervisChocolatey -ComputerName $ComputerName
+            
+            $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
+
+            Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+                choco install chocolatey-uninstall.extension -y
+                choco install $Using:DestinationLocal -y
+            }
+        }
+    }
+}
+
+function Copy-Office2016VLPackage {
+    param (
+        $ComputerName 
+    )
+    begin {
         $Source = "\\$env:USERDNSDOMAIN\applications\chocolatey\Office2016VL.16.0.4266.1001.nupkg"
         $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
     }
@@ -1193,16 +1202,14 @@ function Install-TervisOffice2016VLPush {
             }
 
             if (-not (Test-Path -Path $DestinationRemote)) {
-                Copy-Item -Path $Source -Destination $DestinationRemote
-            }
-            
-            Install-TervisChocolatey -ComputerName $ComputerName
-            
-            Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-                choco install chocolatey-uninstall.extension -y
-                choco install $Using:DestinationLocal -y
+                Start-BitsTransfer -Asynchronous -Source $Source -Destination $DestinationRemote
             }
         }
+    }
+    end {
+        do {
+            Get-BitsTransfer
+        } while (Get-BitsTransfer)
     }
 }
 
@@ -1315,5 +1322,58 @@ function Get-JavaVersionFromComputerObjects {
             ComputerName = $ComputerName 
             JavaHome = $JavaHome    
         }
+    }
+}
+
+function Restart-TervisComputerIfNotRebootedSinceDateTime {
+    param (
+        [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
+        [Parameter(Mandatory)][DateTime]$HaventRebootedSinceDate,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        $Message
+    )
+    process {
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
+            $Uptime = Get-Uptime -ComputerName $ComputerName
+            $DateLastRebooted = (Get-Date) - $Uptime
+            if ($HaventRebootedSinceDate -gt $DateLastRebooted) {
+                if ($Message) {
+                    Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName -Message $Message
+                } else {
+                    Restart-TervisComputer -DateTimeOfRestart $DateTimeOfRestart -ComputerName $ComputerName
+                }
+            }
+        }
+    }
+}
+
+function Restart-TervisComputer {
+    param (
+        [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        $Message
+    )
+    begin {
+        [int]$SecondsTillRestart = $DateTimeOfRestart - (Get-Date) | Select-Object -ExpandProperty TotalSeconds
+    }
+    process {
+        $Arguments = "/m", "\\$ComputerName", "/t", "$SecondsTillRestart", "/r", "/f"
+        if ($Message) {
+            $Arguments += "/c", "$Message"
+        }
+
+        & shutdown.exe $Arguments
+    }
+}
+
+function Stop-TervisComputerRestart {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+
+        $Arguments = "/m", "\\$ComputerName", "/a"
+
+        & shutdown.exe $Arguments
     }
 }
