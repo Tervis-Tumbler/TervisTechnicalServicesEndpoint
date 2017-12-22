@@ -1171,7 +1171,8 @@ function Install-TervisOffice2016VLPush {
         $ComputerName 
     )
     process {
-        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {            
+        if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
+            Copy-Office2016VLPackage -ComputerName $ComputerName
             Install-TervisChocolatey -ComputerName $ComputerName
             
             $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
@@ -1207,9 +1208,11 @@ function Copy-Office2016VLPackage {
         }
     }
     end {
-        do {
-            Get-BitsTransfer
-        } while (Get-BitsTransfer)
+        while (Get-BitsTransfer) {
+            Get-BitsTransfer | Where-Object JobState -eq "Transferred" | Complete-BitsTransfer
+            Get-BitsTransfer | Select-Object -Property @{Name="PercentComplete";Expression={$_.BytesTransferred/$_.BytesTotal} }
+            Start-Sleep -Seconds 60
+        }
     }
 }
 
