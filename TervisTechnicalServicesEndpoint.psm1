@@ -1270,6 +1270,64 @@ function Invoke-SetWindows7FolderRedirectionRevertApply {
     
 }
 
+function Get-TervisWindows10ClientComputers {
+    $DomainDistinguishedName = Get-ADDomain | select -ExpandProperty DistinguishedName
+    Get-ADComputer `
+        -SearchBase "OU=Departments,$DomainDistinguishedName" `
+        -Filter {
+            (OperatingSystem -eq "Windows 10 Enterprise") -and 
+            (Enabled -eq $true) -and
+            (Name -notlike "0*")
+        } | 
+        Add-Member -MemberType AliasProperty -Name ComputerName -Value Name -Force -PassThru |
+        sort Name
+}
+
+function Get-TervisWindows7ClientComputers {
+    $DomainDistinguishedName = Get-ADDomain | select -ExpandProperty DistinguishedName
+    Get-ADComputer `
+        -SearchBase "OU=Departments,$DomainDistinguishedName" `
+        -Filter {
+            (OperatingSystem -eq "Windows 7 Enterprise") -and 
+            (Enabled -eq $true) -and
+            (Name -notlike "0*")
+        } | 
+        Add-Member -MemberType AliasProperty -Name ComputerName -Value Name -Force -PassThru |
+        sort Name
+}
+
+function Install-JavaChocolateyPackageOnEndpoint {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        try {
+            Install-TervisChocolateyPackage -ComputerName $ComputerName -PackageName javaruntime -ErrorAction Stop | Out-Null
+            Set-JavaHomeEnvironmentVariable -ComputerName $ComputerName
+            $Installed = $true
+        } catch {
+            $Installed = $false
+        }            
+        [PSCustomObject][Ordered]@{
+            ComputerName = $ComputerName
+            Installed = $Installed
+        }
+    }
+}
+
+function Get-JavaVersionFromComputerObjects {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        $JavaHome = Get-JavaHomeDirectory -ComputerName $ComputerName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+        [PSCustomObject]@{
+            ComputerName = $ComputerName 
+            JavaHome = $JavaHome    
+        }
+    }
+}
+
 function Restart-TervisComputerIfNotRebootedSinceDateTime {
     param (
         [Parameter(Mandatory)][DateTime]$DateTimeOfRestart,
@@ -1316,6 +1374,7 @@ function Stop-TervisComputerRestart {
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
     process {
+
         $Arguments = "/m", "\\$ComputerName", "/a"
 
         & shutdown.exe $Arguments
