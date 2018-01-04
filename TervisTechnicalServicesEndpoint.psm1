@@ -1380,3 +1380,18 @@ function Stop-TervisComputerRestart {
         & shutdown.exe $Arguments
     }
 }
+
+function Invoke-TervisJavaCertificateFix {
+    param(
+        [Parameter(ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        Write-Verbose "$ComputerName"
+        $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
+        Set-JavaHomeEnvironmentVariable
+        Set-JavaToolOptionsEnvironmentVariable
+        Install-TervisJavaDeploymentRuleSet
+        Invoke-Command -ScriptBlock {gpupdate}
+        $PSDefaultParameterValues.clear()
+    }
+}
