@@ -1382,11 +1382,11 @@ function Stop-TervisComputerRestart {
 }
 
 function Invoke-TervisJavaCertificateFix {
-    param(
-        [Parameter(ValueFromPipelineByPropertyName)]$ComputerName
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
     process {
-        Write-Verbose "$ComputerName"
+        Write-Verbose "$ComputerName`: Correcting Java issues."
         $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
         Set-JavaHomeEnvironmentVariable
         Set-JavaToolOptionsEnvironmentVariable
