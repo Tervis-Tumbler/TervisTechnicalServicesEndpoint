@@ -67,7 +67,7 @@ function Get-TervisIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","SurfaceMES","IQ2Welder")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresBackOffice","SurfaceMES","IQ2Welder")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
         [Parameter(Mandatory)][String]$ComputerName
@@ -213,6 +213,13 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Write-Verbose "Restarting for Autologon"
         Restart-Computer -Wait -Force -ComputerName $ComputerName
         Write-Warning "Weld tech will install desired iQ II version"
+    }
+},
+[PSCustomObject][Ordered]@{
+    Name = "StoresBackOffice"
+    ChocolateyPackageGroupNames = "StoresBackOffice"
+    DefaultOU = "OU=Back Office Computers,OU=Remote Store Computers,OU=Computers,OU=Stores,OU=Departments,DC=tervis,DC=prv"
+    InstallScript = {
     }
 }
 
