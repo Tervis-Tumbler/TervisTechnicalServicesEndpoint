@@ -67,7 +67,7 @@ function Get-TervisIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresBackOffice","SurfaceMES","IQ2Welder")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","SharedOfficeEndpoint","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresBackOffice","SurfaceMES","IQ2Welder")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
         [Parameter(Mandatory)][String]$ComputerName
@@ -137,6 +137,11 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
 [PSCustomObject][Ordered]@{
     Name = "StandardOfficeEndpoint"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
+    DefaultOU = "OU=Sandbox,DC=tervis,DC=prv"
+},
+[PSCustomObject][Ordered]@{
+    Name = "SharedOfficeEndpoint"
+    ChocolateyPackageGroupNames = "SharedOfficeEndpoint"
     DefaultOU = "OU=Sandbox,DC=tervis,DC=prv"
 },
 [PSCustomObject][Ordered]@{
