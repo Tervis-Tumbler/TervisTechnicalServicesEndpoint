@@ -634,8 +634,8 @@ function Install-TervisEPSViewer {
     )
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
     Install-TervisChocolatey -Verbose
-    Install-TervisChocolateyPackage -PackageName ghostscript.app -Version 9.20
-    Install-TervisChocolateyPackage -PackageName gimp -Version 2.8.20
+    Install-TervisChocolateyPackage -PackageName ghostscript.app -Version "9.20"
+    Install-TervisChocolateyPackage -PackageName gimp -Version "2.8.20"
     Set-TervisEPSConfiguration
     Install-TervisChocolateyPackage -PackageName foxitreader
     $PSDefaultParameterValues.Clear()
