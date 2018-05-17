@@ -1235,17 +1235,6 @@ function Copy-Office2016VLPackage {
     }
 }
 
-function Invoke-SetWindows7UserAccountForOneDrive {
-    Param(
-        [parameter(Mandatory)]$Username
-    )
-    $UserObject = Get-ADUser -Identity $Username -Properties HomeDirectory
-    if ($UserObject.HomeDirectory){
-        Set-ADUser -Identity $Username -Clear HomeDirectory
-    }
-    Get-ADGroup -Identity "Privilege_OneDriveWindows7_Apply" | Add-ADGroupMember -Members $Username
-}
-
 function Invoke-PushCiscoJabberLogonScript {
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
@@ -1276,18 +1265,6 @@ function Invoke-PushCiscoJabberLogonScript {
     }
 }
 
-function Invoke-SetWindows7FolderRedirectionRevertApply {
-    Param(
-        [parameter(Mandatory)]$Username
-    )
-    $UserObject = Get-ADUser -Identity $Username -Properties HomeDirectory
-    if ($UserObject.HomeDirectory){
-        Set-ADUser -Identity $Username -Clear HomeDirectory
-    }
-    Get-ADGroup -Identity "Privilege_FolderRedirectionWin7Revert_Apply" | Add-ADGroupMember -Members $Username
-    Get-ADGroup -Identity "Privilege_OneDriveGroupPolicyExemption" | Add-ADGroupMember -Members $Username
-    
-}
 
 function Get-TervisWindows10ClientComputers {
     $DomainDistinguishedName = Get-ADDomain | select -ExpandProperty DistinguishedName
