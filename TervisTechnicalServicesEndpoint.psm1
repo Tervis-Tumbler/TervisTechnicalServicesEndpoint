@@ -1213,6 +1213,18 @@ function Copy-Office2016VLPackage {
         $DestinationLocal = "C:\ProgramData\Tervis\ChocolateyPackage\Office2016VL.16.0.4266.1001.nupkg"
     }
     process {
+        Copy-ItemToRemoteComputerWithBitsTransfer -ComputerName $ComputerName -Source $Source -DestinationLocal $DestinationLocal
+    }
+
+}
+
+function Copy-ItemToRemoteComputerWithBitsTransfer {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [Parameter(Mandatory)]$Source,
+        [Parameter(Mandatory)]$DestinationLocal
+    )
+    process {
         if (Test-NetConnection $ComputerName | Select-Object -ExpandProperty PingSucceeded) {
             $DestinationRemote = $DestinationLocal | ConvertTo-RemotePath -ComputerName $ComputerName            
             $PackageDirectoryRemote = Split-Path -Path $DestinationRemote -Parent
@@ -1228,10 +1240,12 @@ function Copy-Office2016VLPackage {
     }
     end {
         while (Get-BitsTransfer) {
-            Get-BitsTransfer | Where-Object JobState -eq "Transferred" | Complete-BitsTransfer
-            Get-BitsTransfer | Select-Object -Property @{Name="PercentComplete";Expression={$_.BytesTransferred/$_.BytesTotal} }
-            Start-Sleep -Seconds 60
+            Get-BitsTransfer | Where-Object JobState -eq "Transferred" | Complete-BitsTransfer | Out-Null
+            Get-BitsTransfer | Select-Object -Property @{Name="PercentComplete";Expression={$_.BytesTransferred*100/$_.BytesTotal} }
+            #Get-BitsTransfer | ForEach-Object {Write-Host "`rPercent Complete: $($_.BytesTransferred*100/$_.BytesTotal)" -NoNewline}
+            Start-Sleep -Seconds 5
         }
+        #Write-Host "`nTranfer Complete"
     }
 }
 
