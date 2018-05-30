@@ -89,7 +89,7 @@ function New-TervisEndpoint {
     Disable-WMIOnEndpointPublicProfile
     Invoke-TervisGroupPolicyUpdateForceRestart 
     Set-TervisEndpointPowerPlan
-    Sync-ADDomainControllers
+    #Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
     Remove-KerberosTickets   
     Set-TervisBuiltInAdminAccountPassword
@@ -213,10 +213,10 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     DefaultOU = "OU=IQ Explorer II,OU=Welder Stations,OU=Engineering,OU=Departments,DC=tervis,DC=prv"
     InstallScript = {
         Enable-TouchKeyboardOnWindows10Endpoint -ComputerName $ComputerName
-        Install-DotNet35OnEndpoint -ComputerName $ComputerName
         New-iQExplorerIIOptionsFile -ComputerName $ComputerName
         Write-Verbose "Restarting for Autologon"
         Restart-Computer -Wait -Force -ComputerName $ComputerName
+        Install-DotNet35OnEndpoint -ComputerName $ComputerName
         Write-Warning "Weld tech will install desired iQ II version"
     }
 },
