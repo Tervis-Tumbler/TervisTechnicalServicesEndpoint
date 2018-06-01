@@ -89,7 +89,7 @@ function New-TervisEndpoint {
     Disable-WMIOnEndpointPublicProfile
     Invoke-TervisGroupPolicyUpdateForceRestart 
     Set-TervisEndpointPowerPlan
-    #Sync-ADDomainControllers
+    Sync-ADDomainControllers
     Add-ComputerToPrivilege_PrincipalsAllowedToDelegateToAccount
     Remove-KerberosTickets   
     Set-TervisBuiltInAdminAccountPassword
