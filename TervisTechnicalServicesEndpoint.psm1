@@ -1,5 +1,4 @@
 ﻿#Requires -version 5.0
-#Requires -modules TervisPasswordstatePowershell, TervisChocolatey, TervisNetTCPIP, TervisApplication
 #Requires -RunAsAdministrator
 
 function Enter-PSSessionToNewEndpoint {
@@ -75,7 +74,7 @@ function New-TervisEndpoint {
     $EndpointType = Get-TervisEndpointType -Name $EndpointTypeName
 
     Write-Verbose "Getting local admin credentials"
-    $LocalAdministratorCredential = Get-PasswordstateCredential -PasswordID 14
+    $LocalAdministratorCredential = Get-PasswordstatePassword -ID 14 -AsCredential
 
     if ($MACAddressWithDashes) {
         $IPAddress = Get-TervisIPAddressAsString -MACAddressWithDashes $MACAddressWithDashes
@@ -324,7 +323,7 @@ function New-TervisLocalAdminAccount {
     
     Write-Verbose "Creating TumblerAdministrator local account"
 
-    $TumblerAdminCredential = Get-PasswordstateCredential -PasswordID 14    
+    $TumblerAdminCredential = Get-PasswordstatePassword -ID 14 -AsCredential
     $TumblerAdminPassword = $TumblerAdminCredential.Password
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {        
         New-LocalUser -Name "TumblerAdministrator" -Password $Using:TumblerAdminPassword -FullName "TumblerAdministrator" -Description "Local Admin Account" -PasswordNeverExpires
@@ -349,7 +348,7 @@ function Set-TervisBuiltInAdminAccountPassword {
     )
     
     Write-Verbose "Resetting password of built-in Administrator account"
-    $BuiltinAdminCredential = Get-PasswordstateCredential -PasswordID 3972    
+    $BuiltinAdminCredential = Get-PasswordstatePassword -ID 3972 -AsCredential
     $BuiltinAdminPassword = $BuiltinAdminCredential.Password
 
     Invoke-Command -ComputerName $ComputerName -ScriptBlock {
