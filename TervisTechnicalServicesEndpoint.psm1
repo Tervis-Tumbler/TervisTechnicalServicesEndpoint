@@ -83,6 +83,7 @@ function New-TervisEndpoint {
     Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Enable-SmbDomainProfileFirewallRuleOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
+    Copy-LocalNTUserDatFileToComputer -ComputerName $ComputerName
 
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
     Disable-WMIOnEndpointPublicProfile
@@ -1402,5 +1403,24 @@ function Invoke-TervisJavaCertificateFix {
         Install-TervisJavaDeploymentRuleSet
         Invoke-Command -ScriptBlock {gpupdate}
         $PSDefaultParameterValues.clear()
+    }
+}
+
+function Copy-LocalNTUserDatFileToComputer {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    begin {
+        $NTUserDatPath = "C:\users\Default\NTUSER.DAT"
+        $DestinationPathLocal = "C:\users\Default"
+    }
+    process {
+        $DestinationPath = $DestinationPathLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+        try {
+            Write-Verbose "Copying local default NTUSER.DAT to $ComputerName"
+            Copy-Item -Path $NTUserDatPath -Destination $DestinationPath -Force -ErrorAction Stop
+        } catch {
+            Write-Warning "$ComputerName`: Could not copy NTUSER.DAT. Check connection to computer, or restart computer and try again."
+        }
     }
 }
