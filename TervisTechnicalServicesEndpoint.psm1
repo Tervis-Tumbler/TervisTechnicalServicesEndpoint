@@ -1424,3 +1424,27 @@ function Copy-LocalNTUserDatFileToComputer {
         }
     }
 }
+
+function Enable-RDPOnComputer {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        Invoke-Command -ComputerName $ComputerName -Scriptblock {
+            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
+            Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        }
+    }
+}
+
+function Disable-RDPOnComputer {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+    )
+    process {
+        Invoke-Command -ComputerName $ComputerName -Scriptblock {
+            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 1
+            Disable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        }
+    }
+}
