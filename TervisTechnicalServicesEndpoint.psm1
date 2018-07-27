@@ -82,6 +82,7 @@ function New-TervisEndpoint {
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
     Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Enable-SmbDomainProfileFirewallRuleOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
+    Enable-RDPOnComputer -ComputerName $ComputerName
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
     Copy-LocalNTUserDatFileToComputer -ComputerName $ComputerName
 
