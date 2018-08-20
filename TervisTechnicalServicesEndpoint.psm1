@@ -62,7 +62,6 @@ function New-TervisEndpoint {
     Install-TervisChocolatey
     Install-TervisChocolateyPackages -ChocolateyPackageGroupNames $EndpointType.ChocolateyPackageGroupNames
     Add-ADGroupMember -Identity "EndpointType_$($EndpointType.Name)" -Members (Get-ADComputer -Identity $ComputerName)
-    Invoke-PushCiscoJabberLogonScript
     Invoke-PushTervisExplorerFavoritesOrQuickAccessToNewEndpoint    
     $PSDefaultParameterValues.clear()
 
