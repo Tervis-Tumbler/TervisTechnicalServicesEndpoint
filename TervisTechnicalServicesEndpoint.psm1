@@ -10,41 +10,6 @@ function Enter-PSSessionToNewEndpoint {
     Enter-PSSession -ComputerName $IPAddress -Credential $Credential
 }
 
-function New-CustomerCareSignatures {
-    param (            
-        [parameter(Mandatory)][string]$UserName,
-        [parameter(Mandatory)][string]$Computername,
-        [string]$SignatureTemplateLocation = "\\dfs-13\Departments - I Drive\Sales\DTC\Signatures"
-    )  
-
-    Copy-Item -Path $SignatureTemplateLocation -Destination C:\SigTemp\Signatures -Recurse
-
-    #Placeholders
-    $NameHolder = '\[Name\]'
-    $PersonalEmailHolder = '\[PersonalEmail\]'
-    $TitleHolder = '\[Title\]'
-
-    #Get AD info of current user
-    $ADUser = Get-ADUser -Identity $Username -Properties name,title,mail
-    $ADDisplayName = $ADUser.Name.ToUpper()
-    $ADTitle = $ADUser.title
-    $ADEmailAddress = $ADUser.mail
-
-    $SignatureFiles = Get-ChildItem -Path C:\SigTemp\Signatures\*.*
-
-    ForEach ($SignatureFile in $SignatureFiles) {
-        (Get-Content $SignatureFile) |
-        ForEach-Object {    
-           $_ -replace $NameHolder, $ADDisplayName `
-              -replace $TitleHolder, $ADTitle `
-              -replace $PersonalEmailHolder, $ADEmailAddress } |
-        Set-Content $SignatureFile
-    }
-
-    Copy-Item "C:\SigTemp\Signatures" "\\$computername\c$\Users\$username\appdata\roaming\microsoft\" -Recurse -Force
-    Remove-Item -Path "C:\SigTemp" -Recurse -Force
-}
-
 function Get-TervisIPAddressAsString {
     [CmdletBinding()]
     param (
