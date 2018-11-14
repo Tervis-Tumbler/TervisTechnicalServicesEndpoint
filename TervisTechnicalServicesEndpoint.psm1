@@ -1391,12 +1391,13 @@ function Copy-LocalNTUserDatFileToComputer {
 }
 
 function Enable-RDPOnComputer {
-    [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
-    [pscredential]$Credential = [pscredential]::Empty
-)
-process {
-    Write-Verbose "Enabling RDP on $ComputerName"
-    Invoke-Command @PSBoundParameters -ScriptBlock {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [pscredential]$Credential = [pscredential]::Empty
+    )
+    process {
+        Write-Verbose "Enabling RDP on $ComputerName"
+        Invoke-Command @PSBoundParameters -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
             Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         }
@@ -1405,10 +1406,11 @@ process {
 
 function Disable-RDPOnComputer {
     param (
-        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [pscredential]$Credential = [pscredential]::Empty
     )
     process {
-        Invoke-Command -ComputerName $ComputerName -Scriptblock {
+        Invoke-Command @PSBoundParameters -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 1
             Disable-NetFirewallRule -DisplayGroup "Remote Desktop"
         }
