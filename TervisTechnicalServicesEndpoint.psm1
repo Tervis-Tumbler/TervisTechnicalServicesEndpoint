@@ -47,7 +47,7 @@ function New-TervisEndpoint {
     Add-IPAddressToWSManTrustedHosts -IPAddress $IPAddress
     Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Enable-SmbDomainProfileFirewallRuleOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
-    Enable-RDPOnComputer -ComputerName $ComputerName
+    Enable-RDPOnComputer -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
     Copy-LocalNTUserDatFileToComputer -ComputerName $ComputerName
 
@@ -1391,11 +1391,12 @@ function Copy-LocalNTUserDatFileToComputer {
 }
 
 function Enable-RDPOnComputer {
-    param (
-        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
-    )
-    process {
-        Invoke-Command -ComputerName $ComputerName -Scriptblock {
+    [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+    [pscredential]$Credential = [pscredential]::Empty
+)
+process {
+    Write-Verbose "Enabling RDP on $ComputerName"
+    Invoke-Command @PSBoundParameters -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
             Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         }
