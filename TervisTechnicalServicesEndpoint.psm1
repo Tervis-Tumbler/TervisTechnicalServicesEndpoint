@@ -31,7 +31,7 @@ function Get-TervisIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("ContactCenterAgent","BartenderPrintStationKiosk","SharedOfficeEndpoint","StandardOfficeEndpoint","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresBackOffice","SurfaceMES","IQ2Welder","HamTest")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("StandardOfficeEndpoint","SharedOfficeEndpoint","ContactCenterAgent","BartenderPrintStationKiosk","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresRegister","StoresBackOffice","SurfaceMES","IQ2Welder","HamTest")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
         [Parameter(Mandatory)][String]$ComputerName
@@ -68,11 +68,6 @@ function New-TervisEndpoint {
     if ($EndpointType.InstallScript) {
         Invoke-Command -ScriptBlock $EndpointType.InstallScript -ArgumentList $ComputerName
     }
-
-    if ($EndpointType.Name -eq "CafeKiosk") {
-        Write-Verbose "Starting Cafe Kiosk install"
-        New-TervisEndpointCafeKiosk -EndpointName $ComputerName 
-    }    
 }
 
 function Get-TervisEndpointType {
@@ -98,6 +93,10 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "CafeKiosk"
     BaseName = "Cafe"
     DefaultOU = "OU=Cafe Kiosks,OU=Human Resources,OU=Departments,DC=tervis,DC=prv"
+    InstallScript = {
+        Write-Verbose "Starting Cafe Kiosk install"
+        New-TervisEndpointCafeKiosk -EndpointName $ComputerName 
+    }
 },
 [PSCustomObject][Ordered]@{
     Name = "StandardOfficeEndpoint"
@@ -183,6 +182,13 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Restart-Computer -Wait -Force -ComputerName $ComputerName
         Install-DotNet35OnEndpoint -ComputerName $ComputerName
         Write-Warning "Weld tech will install desired iQ II version"
+    }
+},
+[PSCustomObject][Ordered]@{
+    Name = "StoresRegister"
+    ChocolateyPackageGroupNames = "StoresRegister"
+    DefaultOU = "OU=StoreRegisters_Win10,OU=IndustryPCs,DC=tervis,DC=prv"
+    InstallScript = {
     }
 },
 [PSCustomObject][Ordered]@{
