@@ -164,7 +164,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
         }        
-        Set-TervisEndpointPowerPlan -ComputerName $ComputerName -NoSleepOnBattery
+        Set-TervisEndpointPowerPlan -ComputerName $ComputerName -NoSleepOnBattery -MaximumBrightness
         Set-TervisAutoHotKeyF2PrintScript -ComputerName $ComputerName
         Set-TervisSurfaceMESKioskMode -ComputerName $ComputerName
         Write-Verbose "Restarting for Autologon"
@@ -347,16 +347,23 @@ function Set-TervisEndpointPowerPlan {
 
         [pscredential]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
-        [Switch]$NoSleepOnBattery
+        [Switch]$NoSleepOnBattery,
+        [Switch]$MaximumBrightness
     )
 
     Write-Verbose "Setting power configuration"
     Invoke-Command -ComputerName $ComputerName -Credential $Credential -ScriptBlock {        
         $ActivePowerScheme = Get-WmiObject -Namespace root\cimv2\power -Class Win32_PowerPlan | where isActive -eq $true
         $ActivePowerSchemeGUID = $ActivePowerScheme.InstanceID.Split("{")[1].Split("}")[0]
+        
         $PowerButtonsAndLidSubGUID = "4f971e89-eebd-4455-a8de-9e59040e7347"
         $PowerButtonActionSettingGUID = "7648efa3-dd9c-4e3e-b566-50f929386280"
         $PowerButtonActionShutDown = 3
+        
+        $ScreenGUID = "7516b95f-f776-4464-8c53-06167f40cc99"
+        $AutoBrightnessGUID = "fbd9aa66-9553-4097-ba44-ed6e9d65eab8"
+        $BrightnessLevelGUID = "aded5e82-b909-4619-9949-f5d71dac0bcb"
+        
         powercfg -setacvalueindex $ActivePowerSchemeGUID $PowerButtonsAndLidSubGUID $PowerButtonActionSettingGUID $PowerButtonActionShutDown
         powercfg -setdcvalueindex $ActivePowerSchemeGUID $PowerButtonsAndLidSubGUID $PowerButtonActionSettingGUID $PowerButtonActionShutDown
         
@@ -368,6 +375,13 @@ function Set-TervisEndpointPowerPlan {
             powercfg -change -monitor-timeout-dc 0
             powercfg -change -standby-timeout-dc 0
             powercfg -change -hibernate-timeout-dc 0
+        }
+
+        if ($using:MaximumBrightness) {
+            powercfg -setacvalueindex $ActivePowerSchemeGUID $ScreenGUID $AutoBrightnessGUID 0
+            powercfg -setdcvalueindex $ActivePowerSchemeGUID $ScreenGUID $AutoBrightnessGUID 0
+            powercfg -setacvalueindex $ActivePowerSchemeGUID $ScreenGUID $BrightnessLevelGUID 100
+            powercfg -setdcvalueindex $ActivePowerSchemeGUID $ScreenGUID $BrightnessLevelGUID 100
         }
     }
 }
