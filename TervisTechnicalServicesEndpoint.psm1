@@ -37,7 +37,7 @@ function Get-TervisIPAddressAsString {
 function New-TervisEndpoint {    
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)][ValidateSet("StandardOfficeEndpoint","SharedOfficeEndpoint","ContactCenterAgent","BartenderPrintStationKiosk","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresRegister","StoresBackOffice","SurfaceMES","IQ2Welder","HamTest")][String]$EndpointTypeName,
+        [Parameter(Mandatory)][ValidateSet("StandardOfficeEndpoint","SharedOfficeEndpoint","ContactCenterAgent","BartenderPrintStationKiosk","ShipStation","CafeKiosk","IT","MESAuditor","MESStation","FillRoomSurface","StoresRegister","StoresBackOffice","SurfaceMES","IQ2Welder","HamTest","DomainJoin")][String]$EndpointTypeName,
         [Parameter(Mandatory,ParameterSetName="EndpointMacAddress")][String]$MACAddressWithDashes,
         [Parameter(Mandatory,ParameterSetName="IPAddress")][String]$IPAddress,
         [Parameter(Mandatory)][String]$ComputerName
