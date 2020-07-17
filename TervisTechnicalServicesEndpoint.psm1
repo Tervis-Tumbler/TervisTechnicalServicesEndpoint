@@ -506,7 +506,7 @@ function Install-TervisEPSViewer {
     Install-TervisChocolateyPackage -PackageName ghostscript.app -Version "9.20"
     Install-TervisChocolateyPackage -PackageName gimp -Version "2.8.20"
     Set-TervisEPSConfiguration
-    Install-TervisChocolateyPackage -PackageName foxitreader
+    Install-TervisChocolateyPackage -PackageName adobereader
     $PSDefaultParameterValues.Clear()
 }
 
