@@ -504,7 +504,7 @@ function Install-TervisEPSViewer {
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
     Install-TervisChocolatey -Verbose
     Install-TervisChocolateyPackage -PackageName ghostscript.app -Version "9.20"
-    Install-TervisChocolateyPackage -PackageName gimp -Version "2.8.20"
+    Install-TervisChocolateyPackage -PackageName gimp -Version "2.10.20.1"
     Set-TervisEPSConfiguration
     Install-TervisChocolateyPackage -PackageName adobereader
     $PSDefaultParameterValues.Clear()
@@ -616,7 +616,7 @@ function Set-TervisEPSConfiguration {
         New-ItemProperty `
             -Path HKLM:\SOFTWARE\Classes\ps_auto_file\shell\open\command `
             -Name '(default)' `
-            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.8.exe" "%1"' `
+            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.10.exe" "%1"' `
             -PropertyType String            
 
         New-Item -Path HKLM:\SOFTWARE\Classes\eps_auto_file
@@ -626,7 +626,7 @@ function Set-TervisEPSConfiguration {
         New-ItemProperty `
             -Path HKLM:\SOFTWARE\Classes\eps_auto_file\shell\open\command `
             -Name '(default)' `
-            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.8.exe" "%1"' `
+            -Value '"C:\Program Files\GIMP 2\bin\gimp-2.10.exe" "%1"' `
             -PropertyType String
 
         New-Item -Path HKLM:\SOFTWARE\Classes\ai_auto_file
@@ -636,7 +636,7 @@ function Set-TervisEPSConfiguration {
         New-ItemProperty `
             -Path HKLM:\SOFTWARE\Classes\ai_auto_file\shell\open\command `
             -Name '(default)' `
-            -Value '"C:\Program Files (x86)\Foxit Software\Foxit Reader\FoxitReader.exe" "%1"' `
+            -Value '"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe" "%1"' `
             -PropertyType String
 
         New-ItemProperty `
