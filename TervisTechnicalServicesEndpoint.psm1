@@ -1,4 +1,4 @@
-﻿#Requires -version 5.0
+#Requires -version 5.0
 #Requires -RunAsAdministrator
 $ModulePath = if ($PSScriptRoot) {
     $PSScriptRoot
@@ -54,6 +54,7 @@ function New-TervisEndpoint {
     Enable-WMIOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Enable-SmbDomainProfileFirewallRuleOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Enable-RDPOnComputer -ComputerName $IPAddress -Credential $LocalAdministratorCredential
+    Enable-SystemRestoreOnEndpoint -ComputerName $IPAddress -Credential $LocalAdministratorCredential
     Set-TervisEndpointNameAndDomain -OUPath $EndpointType.DefaultOU -ComputerName $ComputerName -IPAddress $IPAddress -LocalAdministratorCredential $LocalAdministratorCredential -ErrorAction Stop    
     Copy-LocalNTUserDatFileToComputer -ComputerName $ComputerName
 
@@ -1310,6 +1311,19 @@ function Disable-RDPOnComputer {
         Invoke-Command @PSBoundParameters -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 1
             Disable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        }
+    }
+}
+
+function Enable-SystemRestoreOnEndpoint {
+    param (
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName,
+        [pscredential]$Credential = [pscredential]::Empty
+    )
+
+    process {
+        Invoke-Command @PSBoundParameters -ScriptBlock {
+            Enable-ComputerRestore -Drive "C:"
         }
     }
 }
