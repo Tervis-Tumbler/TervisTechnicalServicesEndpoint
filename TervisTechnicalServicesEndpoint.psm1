@@ -1,4 +1,4 @@
-#Requires -version 5.0
+﻿#Requires -version 5.0
 #Requires -RunAsAdministrator
 $ModulePath = if ($PSScriptRoot) {
     $PSScriptRoot
@@ -267,7 +267,7 @@ function Set-TervisEndpointPowerPlan {
 function New-DotNet35DSCMOF {
     configuration DotNet35 {
 
-        Import-DscResource –ModuleName "PSDesiredStateConfiguration"
+        Import-DscResource -ModuleName "PSDesiredStateConfiguration"
 
         Node localhost {
             WindowsOptionalFeature DotNet35 {
@@ -287,7 +287,7 @@ function Install-WCSScaleSupport {
         $ComputerName
     )
     $PSDefaultParameterValues = @{"*:ComputerName" = $ComputerName}
-    Set-JavaHomeEnvironmentVariable
+    # Set-JavaHomeEnvironmentVariable
     $JavaLibDir = Invoke-Command -ScriptBlock {"$env:JAVA_HOME\lib\"}
     $JavaBinDir = Invoke-Command -ScriptBlock {"$env:JAVA_HOME\bin\"}
     $RemoteJavaLibDir = $JavaLibDir | ConvertTo-RemotePath
@@ -695,7 +695,7 @@ function Set-TervisSurfaceMESKioskMode {
     )
     begin {
         $ADDomain = (Get-ADDomain).DNSRoot
-        $AutoLogonSID = (Get-ADUser -Filter {Name -like "Surface*"}).SID.Value
+        $AutoLogonSID = (Get-ADUser -Identity "surfacemes").SID.Value
         $KioskURL = "mesiis.$MESEnvironment.$ADDomain"
     }
     process {
@@ -741,9 +741,9 @@ Return
         Write-Verbose "Creating Run F2Print on Logon registry key"
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             if (-not (Get-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -ErrorAction SilentlyContinue)) {                            
-                New-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
+                New-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "`"C:\Program Files\Autohotkey\AutoHotKey.exe`" $Using:ScriptsDirectory\F2Print.ahk" -PropertyType String
             } else {
-                Set-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "Autohotkey $Using:ScriptsDirectory\F2Print.ahk"
+                Set-ItemProperty -Path $Using:LogonRegistryKey -Name $Using:LogonRegistryName -Value "`"C:\Program Files\Autohotkey\AutoHotKey.exe`" $Using:ScriptsDirectory\F2Print.ahk"
             }
         }
     }
