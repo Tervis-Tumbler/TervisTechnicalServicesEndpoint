@@ -759,8 +759,11 @@ function Invoke-PushSurfaceMESSettings {
         Invoke-Command -ScriptBlock {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AutoRotation" -Name Enable -Value 0
         }
-        #Invoke-TervisGroupPolicyUpdateForceRestart 
-        Set-TervisEndpointPowerPlan
+        $SurfaceADObject = Get-ADComputer -Identity $ComputerName
+        $SurfaceMESRolloutGroup = Get-ADGroup -Identity "SurfaceMESRollout"
+        $SurfaceMESRolloutGroup | Add-ADGroupMember -Members $SurfaceADObject
+        Invoke-TervisGroupPolicyUpdateForceRestart 
+        Set-TervisEndpointPowerPlan -NoSleepOnBattery -MaximumBrightness
         Set-TervisAutoHotKeyF2PrintScript
         Set-TervisSurfaceMESKioskMode -MESEnvironment $MESEnvironment
         Invoke-TervisGroupPolicyUpdateForceRestart
