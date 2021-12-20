@@ -1,4 +1,4 @@
-﻿#Requires -version 5.0
+#Requires -version 5.0
 #Requires -RunAsAdministrator
 $ModulePath = if ($PSScriptRoot) {
     $PSScriptRoot
@@ -1329,4 +1329,32 @@ function Enable-SystemRestoreOnEndpoint {
             Enable-ComputerRestore -Drive "C:"
         }
     }
+}
+
+function Install-TervisStandardEndpointLocalChocolateyPackages {
+    param (
+        $ComputerName
+    )
+
+    $DomainName = "$env:USERDNSDOMAIN"
+    $ChocolateyPackagesPath = "\\$DomainName\applications\Chocolatey"
+    $ChocolateyLocalSourcePath = "C:\ProgramData\Tervis\ChocolateyPackage"
+    $ChocolateyRemoteSourcePath = $ChocolateyLocalSourcePath | ConvertTo-RemotePath -ComputerName $ComputerName
+    $PackagesToInstall = "ciscoanyconnect","office365-deployment-tool","tervisteamviewerhost"
+
+    New-Item -Path $ChocolateyRemoteSourcePath -ItemType Directory -Force | Out-Null
+
+    $PackagePaths = foreach ($Package in $PackagesToInstall) {
+        $PackageFileName = Get-ChildItem -Path $ChocolateyPackagesPath -Name $Package* | Select-Object -Last 1
+        Copy-Item -Path "$ChocolateyPackagesPath\$PackageFileName" -Destination "$ChocolateyRemoteSourcePath\$PackageFileName" -Force
+        "$ChocolateyLocalSourcePath\$PackageFileName"
+    }
+
+    Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+        foreach ($Package in $args) {
+            choco install $Package -yf
+            Test-Path -Path $Package
+            break
+        }
+    } -ArgumentList $PackagePaths
 }

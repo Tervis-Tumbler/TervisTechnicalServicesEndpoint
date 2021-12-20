@@ -23,6 +23,9 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
     Name = "StandardOfficeEndpoint"
     ChocolateyPackageGroupNames = "StandardOfficeEndpoint"
     DefaultOU = "OU=Sandbox,DC=tervis,DC=prv"
+    InstallScript = {
+        Install-TervisStandardEndpointLocalChocolateyPackages -ComputerName $ComputerName
+    }
 },
 [PSCustomObject][Ordered]@{
     Name = "SharedOfficeEndpoint"
