@@ -1333,14 +1333,14 @@ function Enable-SystemRestoreOnEndpoint {
 
 function Install-TervisStandardEndpointLocalChocolateyPackages {
     param (
-        $ComputerName
+        $ComputerName,
+        $PackagesToInstall = ("ciscoanyconnect","office365-deployment-tool","tervisteamviewerhost")
     )
 
     $DomainName = "$env:USERDNSDOMAIN"
     $ChocolateyPackagesPath = "\\$DomainName\applications\Chocolatey"
     $ChocolateyLocalSourcePath = "C:\ProgramData\Tervis\ChocolateyPackage"
     $ChocolateyRemoteSourcePath = $ChocolateyLocalSourcePath | ConvertTo-RemotePath -ComputerName $ComputerName
-    $PackagesToInstall = "ciscoanyconnect","office365-deployment-tool","tervisteamviewerhost"
 
     New-Item -Path $ChocolateyRemoteSourcePath -ItemType Directory -Force | Out-Null
 
