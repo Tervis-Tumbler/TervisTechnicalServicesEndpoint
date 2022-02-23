@@ -1299,7 +1299,7 @@ function Enable-RDPOnComputer {
     process {
         Write-Verbose "Enabling RDP on $ComputerName"
         Invoke-Command @PSBoundParameters -ScriptBlock {
-            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
+            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
             Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         }
     }
@@ -1312,7 +1312,7 @@ function Disable-RDPOnComputer {
     )
     process {
         Invoke-Command @PSBoundParameters -ScriptBlock {
-            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 1
+            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 1
             Disable-NetFirewallRule -DisplayGroup "Remote Desktop"
         }
     }
