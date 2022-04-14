@@ -1,4 +1,4 @@
-#Requires -version 5.0
+﻿#Requires -version 5.0
 #Requires -RunAsAdministrator
 $ModulePath = if ($PSScriptRoot) {
     $PSScriptRoot
@@ -1161,15 +1161,19 @@ function Get-TervisWindows10ClientComputers {
 
 function Get-TervisWindows7ClientComputers {
     $DomainDistinguishedName = Get-ADDomain | select -ExpandProperty DistinguishedName
+    $CutoffDate = (Get-Date).AddMonths(-3)
     Get-ADComputer `
-        -SearchBase "OU=Departments,$DomainDistinguishedName" `
-        -Filter {
-            (OperatingSystem -eq "Windows 7 Enterprise") -and 
-            (Enabled -eq $true) -and
-            (Name -notlike "0*")
-        } | 
+      -Properties LastLogonDate,OperatingSystem `
+      -SearchBase "OU=Departments,$DomainDistinguishedName" `
+      -Filter {
+        (OperatingSystem -like "Windows 7*" -or OperatingSystem -like "Windows 8*") -and
+        (Enabled -eq $true) -and
+        (LastLogonDate -gt $CutoffDate) -and
+        (Name -notlike "0*")
+    } |
         Add-Member -MemberType AliasProperty -Name ComputerName -Value Name -Force -PassThru |
-        sort Name
+        Sort-Object Name |
+        Select-Object Name,LastLogonDate,OperatingSystem
 }
 
 function Install-JavaChocolateyPackageOnEndpoint {
