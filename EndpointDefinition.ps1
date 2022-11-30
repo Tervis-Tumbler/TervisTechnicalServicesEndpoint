@@ -87,7 +87,7 @@ $EndpointTypes = [PSCustomObject][Ordered]@{
         }        
         Set-TervisEndpointPowerPlan -ComputerName $ComputerName -NoSleepOnBattery -MaximumBrightness
         Set-TervisAutoHotKeyF2PrintScript -ComputerName $ComputerName
-        Set-TervisSurfaceMESKioskMode -ComputerName $ComputerName
+        # Set-TervisSurfaceMESKioskMode -ComputerName $ComputerName # Not needed in newer versions with Edge
         Write-Verbose "Restarting for Autologon"
         Restart-Computer -Wait -Force -ComputerName $ComputerName
     }
